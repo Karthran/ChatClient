@@ -60,7 +60,7 @@ int client_thread()
     }
 
     ZeroMemory(&hints, sizeof(hints));
-                                             hints.ai_family = AF_UNSPEC;
+    hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
 
@@ -150,17 +150,7 @@ int client_thread()
             server_error = true;
             break;
 
-            //if (iResult == SOCKET_ERROR)
-            //{
-            //    printf("shutdown failed with error: %d\n", WSAGetLastError());
-            //    closesocket(ConnectSocket);
-            //    WSACleanup();
-            //    server_error = true;
-            //    break;
-            //}
         }
-        // Receive until the peer closes the connection
-        //       do {
 
         iResult = recv(ConnectSocket, recvbuf, current_buffer_size, 0);
         if (iResult > 0)
@@ -182,7 +172,6 @@ int client_thread()
             break;
         }
 
-        //       } while (iResult > 0);
     }
     // cleanup
     closesocket(ConnectSocket);
@@ -244,10 +233,10 @@ int client_thread()
         {
         }
 
-//        bzero(recvbuf, sizeof(recvbuf));
+        //        bzero(recvbuf, sizeof(recvbuf));
         std::copy(message.begin(), message.end(), recvbuf);
 
-//        ssize_t bytes = write(socket_file_descriptor, recvbuf, message.size());
+        //        ssize_t bytes = write(socket_file_descriptor, recvbuf, message.size());
         if (message == "0")
         {
             write(socket_file_descriptor, recvbuf, message.size());
@@ -285,34 +274,6 @@ auto Client::run() -> void
 {
     std::thread tr(&client_thread);
     tr.detach();
-    // bool loop_flag = true;
-    // while (loop_flag)
-    //{
-    //    //while (out_message_ready)
-    //    //{
-    //    //}
-    //    //// std::cin >> message;
-    //    //std::getline(std::cin, message);
-    //    //out_message_ready = true;
-    //    //if (message == "end")
-    //    //{
-    //    //    loop_flag = false;
-    //    //}
-    //    //while (!in_message_ready)
-    //    //{
-    //    //    if (server_error)
-    //    //    {
-    //    //        loop_flag = false;
-    //    //        break;
-    //    //    }
-    //    //}
-    //    //std::cout << message << std::endl;
-    //    //in_message_ready = false;
-    //}
-    // std::cout << "Client stop!" << std::endl;
-    // auto res{0};
-    // std::cin >> res;
-    // return;
 }
 
 auto Client::getOutMessageReady() const -> bool
@@ -355,4 +316,3 @@ auto Client::setBufferSize(size_t size) const -> void
     buffer_size = size;
     need_buffer_resize = true;
 }
-                                       
