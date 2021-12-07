@@ -69,15 +69,11 @@ auto Application::createAccount() -> void
 
     std::string result = user_name + " " + user_login + " " + user_password;
 
-    std::cout << result << std::endl;
-
     sendToServer(result, OperationCode::REGISTRATION);  // in result now OK or ERROR with LOGIN or NAME
 
     std::stringstream stream(result);
 
     stream >> result;
-
-    std::cout << result << std::endl;
 
     if (result == RETURN_ERROR)
     {
@@ -171,7 +167,7 @@ auto Application::createAccount_inputPassword(std::string& user_password) const 
     }
 }
 
-auto Application::signIn() -> int
+auto Application::signIn() -> void
 {
     std::cout << std::endl;
     std::cout << BOLDYELLOW << UNDER_LINE << "Sign In:" << RESET << std::endl;
@@ -180,70 +176,55 @@ auto Application::signIn() -> int
     std::string user_password{};
     while (true)
     {
-        auto index{signIn_inputLogin(user_login)};
-
+        signIn_inputLogin(user_login);
         signIn_inputPassword(user_password);
 
-        if (index != UNSUCCESSFUL)
+        std::string result = user_login + " " + user_password;
+        sendToServer(result, OperationCode::SIGN_IN);  // in result now OK or ERROR with LOGIN or NAME
+        std::stringstream stream(result);
+        stream >> result;
+
+        if (result == RETURN_OK)
         {
-            auto it = _password_hash.find(user_login);
-            std::shared_ptr<PasswordHash> password_hash = sha1(user_password, it->second->getSalt());
-            auto password_match{true};
-            for (auto i{0}; i < SHA1HASHLENGTHUINTS; ++i)
-            {
-                if (it->second->getHash() == password_hash->getHash()) continue;
-                password_match = false;
-                break;
-            }
-            if (password_match)
-            {
-                selectCommonOrPrivate(_user_array[index]);
-                return index;
-            }
+            selectCommonOrPrivate();
+            return;
         }
 
         std::cout << std::endl << RED << "Login or Password don't match!" << std::endl;
         std::cout << BOLDYELLOW << std::endl << "Try again?(Y/N):" << BOLDGREEN;
-        if (!Utils::isOKSelect()) return UNSUCCESSFUL;
+        if (!Utils::isOKSelect()) return;
     }
 }
 
-auto Application::signIn_inputLogin(std::string& user_login) const -> int
+auto Application::signIn_inputLogin(std::string& user_login) const -> void
 {
     std::cout << RESET << "Login:";
     std::cout << BOLDGREEN;
-
     Utils::getString(user_login);
-
     std::cout << RESET;
-    const std::string& (User::*get_login)() const = &User::getUserLogin;
-    return checkingForStringExistence(user_login, get_login);
 }
 auto Application::signIn_inputPassword(std::string& user_password) const -> void
 {
-    // std::cout << RESET << "Password:";
-    // std::cout << BOLDGREEN;
-    // Utils::getBoundedString(user_password, MAX_INPUT_SIZE, true);
-    // std::cout << RESET << std::endl;
-
     Utils::getPassword(user_password, "Password: ");
 }
 
-auto Application::selectCommonOrPrivate(const std::shared_ptr<User>& user) -> int
+auto Application::selectCommonOrPrivate() -> void
 {
     auto isContinue{true};
     while (isContinue)
     {
         std::string menu_arr[] = {"Select chat type:", "Common chat", "Private chat", "Sign Out"};
 
-        auto user_number{_new_messages_array[user->getUserID()]->usersNumber()};
-        if (user_number)  // if exist new message for this user
-        {
-            menu_arr[2] = BOLDYELLOW + menu_arr[2] + RESET + GREEN + "(New message(s) from " + std::to_string(user_number) + " user(s))" +
-                          RESET;  // menu_arr[2] = "Private chat"
-        }
+        //auto user_number{_new_messages_array[user->getUserID()]->usersNumber()};
+        //if (user_number)  // if exist new message for this user
+        //{
+        //    menu_arr[2] = BOLDYELLOW + menu_arr[2] + RESET + GREEN + "(New message(s) from " + std::to_string(user_number) + " user(s))" +
+        //                  RESET;  // menu_arr[2] = "Private chat"
+        //}
 
         auto menu_item{menu(menu_arr, 4)};
+
+        const std::shared_ptr<User> user;
 
         switch (menu_item)
         {
@@ -253,7 +234,7 @@ auto Application::selectCommonOrPrivate(const std::shared_ptr<User>& user) -> in
         }
     }
 
-    return 0;
+    return;
 }
 
 auto Application::commonChat(const std::shared_ptr<User>& user) const -> int

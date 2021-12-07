@@ -46,11 +46,11 @@ private:
     auto createAccount_inputLogin(std::string& login) const -> void;
     auto createAccount_inputPassword(std::string& password) const -> void;
 
-    auto signIn() -> int;
-    auto signIn_inputLogin(std::string& user_login) const -> int;
+    auto signIn() -> void;
+    auto signIn_inputLogin(std::string& user_login) const -> void;
     auto signIn_inputPassword(std::string& user_password) const -> void;
 
-    auto selectCommonOrPrivate(const std::shared_ptr<User>& user) -> int;
+    auto selectCommonOrPrivate() -> void;
 
     auto commonChat(const std::shared_ptr<User>& user) const -> int;
     auto commonChat_addMessage(const std::shared_ptr<User>& user) const -> void;
