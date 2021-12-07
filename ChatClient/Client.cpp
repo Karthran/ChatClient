@@ -119,7 +119,7 @@ int client_thread()
                 delete[] recvbuf;
                 recvbuf = new char[current_buffer_size];
 
-                std::cout << " New Buffer Size: " << current_buffer_size << std::endl;
+                //std::cout << " New Buffer Size: " << current_buffer_size << std::endl;
             }
             need_buffer_resize = false;
         }
@@ -225,7 +225,7 @@ int client_thread()
                 delete[] recvbuf;
                 recvbuf = new char[current_buffer_size];
 
-                std::cout << " New Buffer Size: " << current_buffer_size << std::endl;
+                //std::cout << " New Buffer Size: " << current_buffer_size << std::endl;
             }
             need_buffer_resize = false;
         }
@@ -254,7 +254,7 @@ int client_thread()
         }
         bzero(recvbuf, sizeof(recvbuf));
         // Æäåì îòâåòà îò ñåðâåðà
-        ssize_t length = read(socket_file_descriptor, recvbuf, sizeof(recvbuf));
+        ssize_t length = read(socket_file_descriptor, recvbuf, current_buffer_size);
         if (length > 0)
         {
             message = std::string(recvbuf, length);
