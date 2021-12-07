@@ -1,6 +1,26 @@
 #pragma once
 #include <string>
+#ifdef  _WIN32
+const std::string RESET = "";
+const std::string UNDER_LINE = "";
+const std::string BLACK = "";              /* Black */
+const std::string RED = "";                /* Red */
+const std::string GREEN = "";              /* Green */
+const std::string YELLOW = "";             /* Yellow */
+const std::string BLUE = "";               /* Blue */
+const std::string MAGENTA = "";            /* Magenta */
+const std::string CYAN = "";               /* Cyan */
+const std::string WHITE = "";              /* White */
+const std::string BOLDBLACK = "";   /* Bold Black */
+const std::string BOLDRED = "";     /* Bold Red */
+const std::string BOLDGREEN = "";   /* Bold Green */
+const std::string BOLDYELLOW = "";  /* Bold Yellow */
+const std::string BOLDBLUE = "";    /* Bold Blue */
+const std::string BOLDMAGENTA = ""; /* Bold Magenta */
+const std::string BOLDCYAN = "";    /* Bold Cyan */
+const std::string BOLDWHITE = "";   /* Bold White */
 
+#elif defined __linux__
 const std::string RESET = "\033[0m";
 const std::string UNDER_LINE = "\033[4m";
 const std::string BLACK = "\033[30m";              /* Black */
@@ -19,6 +39,10 @@ const std::string BOLDBLUE = "\033[1m\033[34m";    /* Bold Blue */
 const std::string BOLDMAGENTA = "\033[1m\033[35m"; /* Bold Magenta */
 const std::string BOLDCYAN = "\033[1m\033[36m";    /* Bold Cyan */
 const std::string BOLDWHITE = "\033[1m\033[37m";   /* Bold White */
+#endif                                             //  
+
+const std::string RETURN_ERROR = "ERROR";
+const std::string RETURN_OK = "OK";
 
 const int MAX_INPUT_SIZE = 30;
 const int UNSUCCESSFUL = -1;

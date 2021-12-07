@@ -41,7 +41,7 @@ private:
     auto loop() -> void;
     auto talkToServer(const std::string& message) const -> const std::string&;
 
-    auto createAccount() -> int;
+    auto createAccount() -> void;
     auto createAccount_inputName(std::string& name) const -> void;
     auto createAccount_inputLogin(std::string& login) const -> void;
     auto createAccount_inputPassword(std::string& password) const -> void;

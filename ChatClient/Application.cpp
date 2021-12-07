@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <exception>
 #include <fstream>
+#include <sstream>
 
 #include "Application.h"
 #include "Client.h"
@@ -29,13 +30,9 @@ auto Application::run() -> void
 
     _client = new Client();
     _client->run();
-    loop();
-    
-    return;
+    //    loop();
 
     std::cout << std::endl << BOLDYELLOW << UNDER_LINE << "Wellcome to Console Chat!" << RESET << std::endl;
-
-    load();
 
     auto isContinue{true};
     while (isContinue)
@@ -48,14 +45,15 @@ auto Application::run() -> void
         {
             case 1: signIn(); break;
             case 2: createAccount(); break;
-            default: isContinue = false; break;
+            default:
+                talkToServer(std::to_string(static_cast<int>(OperationCode::STOP)));
+                isContinue = false;
+                break;
         }
     }
-
-    save();
 }
 
-auto Application::createAccount() -> int
+auto Application::createAccount() -> void
 {
     std::string user_name{};
     createAccount_inputName(user_name);
@@ -67,17 +65,35 @@ auto Application::createAccount() -> int
     createAccount_inputPassword(user_password);
 
     std::cout << BOLDYELLOW << std::endl << "Create account?(Y/N): " << BOLDGREEN;
-    if (!Utils::isOKSelect()) return UNSUCCESSFUL;
+    if (!Utils::isOKSelect()) return;
 
-    _user_array.push_back(std::make_shared<User>(user_name, user_login, _current_user_number));
+    std::string result = user_name + " " + user_login + " " + user_password;
 
-    _new_messages_array.push_back(std::make_shared<NewMessages>());
+    std::cout << result << std::endl;
 
-    const std::string salt = getSalt();
-    std::shared_ptr<PasswordHash> password_hash = sha1(user_password, salt);
-    _password_hash[user_login] = password_hash;
+    sendToServer(result, OperationCode::REGISTRATION);  // in result now OK or ERROR with LOGIN or NAME
 
-    return ++_current_user_number;
+    std::stringstream stream(result);
+
+    stream >> result;
+
+    std::cout << result << std::endl;
+
+    if (result == RETURN_ERROR)
+    {
+        stream >> result;
+        if (result == "NAME")
+        {
+            std::cout << std::endl << RED << "Please change name!" << RESET << std::endl;
+            return;
+        }
+        else if (result == "LOGIN")
+        {
+            std::cout << std::endl << RED << "Please change login." << RESET << std::endl;
+            return;
+        }
+    }
+    ++_current_user_number;
 }
 
 auto Application::createAccount_inputName(std::string& user_name) const -> void
@@ -91,8 +107,11 @@ auto Application::createAccount_inputName(std::string& user_name) const -> void
         std::cout << BOLDGREEN;
         Utils::getString(user_name, MAX_INPUT_SIZE);
         std::cout << RESET;
-        const std::string& (User::*get_name)() const = &User::getUserName;
-        if (user_name.empty() || checkingForStringExistence(user_name, get_name) != UNSUCCESSFUL)
+
+        std::string result = user_name;
+        sendToServer(result, OperationCode::CHECK_NAME);  // in result now OK or ERROR
+
+        if (result == RETURN_ERROR)
         {
             std::cout << std::endl << RED << "Please change name!" << RESET << std::endl;
         }
@@ -113,8 +132,11 @@ auto Application::createAccount_inputLogin(std::string& user_login) const -> voi
         std::cout << BOLDGREEN;
         Utils::getString(user_login, MAX_INPUT_SIZE);
         std::cout << RESET;
-        const std::string& (User::*get_login)() const = &User::getUserLogin;
-        if (user_login.empty() || checkingForStringExistence(user_login, get_login) != UNSUCCESSFUL)
+
+        std::string result = user_login;
+        sendToServer(result, OperationCode::CHECK_LOGIN);  // in result now OK or ERROR
+
+        if (result == RETURN_ERROR)
         {
             std::cout << std::endl << RED << "Please change login." << RESET;
         }
@@ -130,24 +152,14 @@ auto Application::createAccount_inputPassword(std::string& user_password) const 
     auto isOK{false};
     while (!isOK)
     {
-        // std::cout << std::endl << "Password(max " << MAX_INPUT_SIZE << " letters): ";
-        // std::cout << BOLDGREEN;
-        // Utils::getBoundedString(user_password, MAX_INPUT_SIZE, true);
-        // std::cout << RESET;
-
         Utils::getPassword(user_password, "Password(max " + std::to_string(MAX_INPUT_SIZE) + " letters): ");
 
         if (user_password.empty()) continue;
 
-        //std::cout << std::endl << "Re-enter your password: ";
-        //std::cout << BOLDGREEN;
-
         std::string check_user_password;
-//        Utils::getBoundedString(check_user_password, MAX_INPUT_SIZE, true);
-        
+
         Utils::getPassword(check_user_password, "Re-enter your password: ");
 
-       // std::cout << RESET;
         if (user_password != check_user_password)
         {
             std::cout << std::endl << RED << "Password don't match!" << RESET;
@@ -209,10 +221,10 @@ auto Application::signIn_inputLogin(std::string& user_login) const -> int
 }
 auto Application::signIn_inputPassword(std::string& user_password) const -> void
 {
-    //std::cout << RESET << "Password:";
-    //std::cout << BOLDGREEN;
-    //Utils::getBoundedString(user_password, MAX_INPUT_SIZE, true);
-    //std::cout << RESET << std::endl;
+    // std::cout << RESET << "Password:";
+    // std::cout << BOLDGREEN;
+    // Utils::getBoundedString(user_password, MAX_INPUT_SIZE, true);
+    // std::cout << RESET << std::endl;
 
     Utils::getPassword(user_password, "Password: ");
 }
@@ -769,23 +781,23 @@ auto Application::loadNewMessages() -> void
 
 auto Application::sendToServer(std::string& message, OperationCode operation_code) const -> void
 {
-    std::string msg_to_srv = std::to_string(static_cast<int>(OperationCode::CHECK_SIZE)) + " " + std::to_string(message.size() + HEADER_SIZE);
+    std::string msg_to_srv =
+        std::to_string(static_cast<int>(OperationCode::CHECK_SIZE)) + " " + std::to_string(message.size() + HEADER_SIZE);
     std::string msg_from_srv = talkToServer(msg_to_srv);
 
-    msg_to_srv = std::to_string(static_cast<int>(OperationCode::CHECK_NAME)) + " " +
-        std::to_string(static_cast<int>(OperationCode::CHECK_SIZE)) + " " + message;
+    msg_to_srv = std::to_string(static_cast<int>(operation_code)) + " " + std::to_string(static_cast<int>(OperationCode::CHECK_SIZE)) +
+                 " " + message;
     msg_from_srv = talkToServer(msg_to_srv);
 
-    auto msg_size{ std::stoi(std::string(msg_from_srv, 2)) };
+    auto msg_size{std::stoi(std::string(msg_from_srv, 2))};
 
     _client->setBufferSize(msg_size + HEADER_SIZE);
 
-    msg_to_srv = std::to_string(static_cast<int>(OperationCode::CHECK_NAME)) + " " +
-        std::to_string(static_cast<int>(OperationCode::READY)) + " " + message;
+    msg_to_srv =
+        std::to_string(static_cast<int>(operation_code)) + " " + std::to_string(static_cast<int>(OperationCode::READY)) + " " + message;
 
     message = talkToServer(msg_to_srv);
-    //return
-
+    // return
 }
 
 auto Application::talkToServer(const std::string& message) const -> const std::string&
@@ -793,7 +805,7 @@ auto Application::talkToServer(const std::string& message) const -> const std::s
     while (_client->getOutMessageReady())
     {
     }
-    //std::cout << message << std::endl;
+    // std::cout << message << std::endl;
     _client->setMessage(message);
     _client->setOutMessageReady(true);
     while (!_client->getInMessageReady())
@@ -827,4 +839,3 @@ auto Application::loop() -> void
     std::cout << "Client stop!" << std::endl;
     return;
 }
-
