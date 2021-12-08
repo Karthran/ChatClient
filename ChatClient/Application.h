@@ -37,6 +37,7 @@ private:
     std::string _self_path{};
 
     Client* _client{ nullptr };
+    int _user_index{-1};
 
     auto loop() -> void;
     auto talkToServer(const std::string& message) const -> const std::string&;

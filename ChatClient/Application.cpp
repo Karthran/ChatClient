@@ -180,12 +180,14 @@ auto Application::signIn() -> void
         signIn_inputPassword(user_password);
 
         std::string result = user_login + " " + user_password;
-        sendToServer(result, OperationCode::SIGN_IN);  // in result now OK or ERROR with LOGIN or NAME
+        sendToServer(result, OperationCode::SIGN_IN);  // in result now OK or ERROR
         std::stringstream stream(result);
         stream >> result;
 
         if (result == RETURN_OK)
         {
+            stream >> result;
+            _user_index = std::stoi(result);
             selectCommonOrPrivate();
             return;
         }
@@ -213,14 +215,18 @@ auto Application::selectCommonOrPrivate() -> void
     auto isContinue{true};
     while (isContinue)
     {
+        std::string result = std::to_string(_user_index);
+        sendToServer(result, OperationCode::NEW_MESSAGES);  // in result now number of new messages
+
         std::string menu_arr[] = {"Select chat type:", "Common chat", "Private chat", "Sign Out"};
 
-        //auto user_number{_new_messages_array[user->getUserID()]->usersNumber()};
-        //if (user_number)  // if exist new message for this user
-        //{
-        //    menu_arr[2] = BOLDYELLOW + menu_arr[2] + RESET + GREEN + "(New message(s) from " + std::to_string(user_number) + " user(s))" +
-        //                  RESET;  // menu_arr[2] = "Private chat"
-        //}
+        auto user_number{std::stoi(result)};
+
+        if (user_number)  // if exist new message for this user
+        {
+            menu_arr[2] = BOLDYELLOW + menu_arr[2] + RESET + GREEN + "(New message(s) from " + std::to_string(user_number) + " user(s))" +
+                          RESET;  // menu_arr[2] = "Private chat"
+        }
 
         auto menu_item{menu(menu_arr, 4)};
 
@@ -248,9 +254,20 @@ auto Application::commonChat(const std::shared_ptr<User>& user) const -> int
         switch (menu_item)
         {
             case 1:
+            {
                 std::cout << std::endl;
-                _common_chat->printMessages(0, _common_chat->getCurrentMessageNum());
+                std::string result = "-1" + DELIMITER + "-1";                      // -1 common chat users id
+                sendToServer(result, OperationCode::GET_NUMBER_MESSAGES_IN_CHAT);  // in result now number of new messages
+                if (result == RETURN_ERROR) break;
+                auto message_num{std::stoi(result)};
+                for (auto i{0}; i < message_num; ++i)
+                {
+                    result = std::to_string(i);
+                    sendToServer(result, OperationCode::COMMON_CHAT_GET_MESSAGES);  // in result now OK or ERROR
+                    std::cout << result;
+                }
                 break;
+            }
             case 2: commonChat_addMessage(user); break;
             case 3: commonChat_editMessage(user); break;
             case 4: commonChat_deleteMessage(user); break;
@@ -775,7 +792,7 @@ auto Application::sendToServer(std::string& message, OperationCode operation_cod
     _client->setBufferSize(msg_size + HEADER_SIZE);
 
     msg_to_srv =
-        std::to_string(static_cast<int>(operation_code)) + " " + std::to_string(static_cast<int>(OperationCode::READY)) + " " + message;
+        std::to_string(static_cast<int>(operation_code)) + " " + std::to_string(static_cast<int>(OperationCode::READY)) /*+ " " + message*/;
 
     message = talkToServer(msg_to_srv);
     // return
