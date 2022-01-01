@@ -41,12 +41,12 @@ const std::string BOLDCYAN = "\033[1m\033[36m";    /* Bold Cyan */
 const std::string BOLDWHITE = "\033[1m\033[37m";   /* Bold White */
 #endif                                             //  
 
-const std::string RETURN_ERROR = "ERROR";
-const std::string RETURN_OK = "OK";
-const std::string DELIMITER = " ";
+const char* RETURN_ERROR = "ERROR";
+const char* RETURN_OK = "OK";
+const char DELIMITER = '\0';
 
 
-const int MAX_INPUT_SIZE = 30;
+const int MAX_INPUT_SIZE = 255;
 const int UNSUCCESSFUL = -1;
 const int SUCCESSFUL = 1;
 const int MAX_MESSAGES_IN_CHAT = 10000;
@@ -61,7 +61,7 @@ public:
     static auto inputIntegerValue() -> int;
     static auto printTimeAndData(const tm& timeinfo) -> void;
     //    static auto getBoundedString(std::string& string, int size, bool hidden = false) -> void;
-    static auto getString(std::string& string, size_t size = 0) -> void;
+    static auto getString(std::string& string) -> void;
     static auto getPassword(std::string& string, const std::string& text) -> void;
     static auto getSelfPath(std::string& path) -> void;
     static auto printOSVersion() -> void;

@@ -79,11 +79,25 @@ auto Utils::printTimeAndData(const tm& timeinfo) -> void
 //    }
 //}
 
-auto Utils::getString(std::string& string, size_t size) -> void
+auto Utils::getString(std::string& string) -> void
 {
-    std::cin >> string;
-    std::cin.ignore(IGNORED_NUM, '\n');
-    if (size && size < string.size()) string.resize(size);
+#ifdef _WIN32
+    wchar_t wstr[MAX_INPUT_SIZE];
+    char mb_str[MAX_INPUT_SIZE * 3 + 1];
+    unsigned long read;
+    void* con = GetStdHandle(STD_INPUT_HANDLE);
+    ReadConsole(con, wstr, MAX_INPUT_SIZE, &read, NULL);
+    int size1 = WideCharToMultiByte(CP_UTF8, 0, wstr, read, mb_str, sizeof(mb_str), NULL, NULL);
+    mb_str[size1 - 2] = '\0';
+    string = std::string(mb_str);
+
+#elif defined __linux__
+    std::getline(std::cin, string);
+#endif  //
+
+    // std::cin >> string;
+    // std::cin.ignore(IGNORED_NUM, '\n');
+    // if (size && size < string.size()) string.resize(size);
 }
 
 auto Utils::getPassword(std::string& password, const std::string& text) -> void
@@ -139,13 +153,13 @@ auto Utils::printOSVersion() -> void
 #if defined(_WIN32)
 
     std::cout << std::endl;
-    std::cout << "OS name: Windows"  << std::endl;
+    std::cout << "OS name: Windows" << std::endl;
     std::cout << "OS version: " << getWindowsVersionName() << std::endl;
 
 #elif defined(__linux__)
 
     struct utsname utsname;  // объект для структуры типа utsname
-    uname(&utsname);  // передаем объект по ссылке
+    uname(&utsname);         // передаем объект по ссылке
 
     std::cout << std::endl;
     std::cout << "OS name: " << utsname.sysname << std::endl;

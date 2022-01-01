@@ -4,6 +4,9 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <string.h>
+
+#include "core.h"
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -23,7 +26,7 @@ const char* DEFAULT_PORT = "27777";
 
 #elif defined __linux__
 #include <unistd.h>
-#include <string.h>
+//#include <string.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -31,25 +34,14 @@ const char* DEFAULT_PORT = "27777";
 const int DEFAULT_PORT = 27777;  // Á
 #endif  //  _WIN32
 
-const int DEFAULT_BUFLEN = 1024;
-
-volatile bool out_message_ready{false};
-volatile bool in_message_ready{false};
-volatile bool server_error{false};
-std::string message{};
-volatile size_t buffer_size{DEFAULT_BUFLEN};
-volatile bool need_buffer_resize{true};
-
 #ifdef _WIN32
 
-int client_thread()
+auto Client::client_thread() -> int
 {
     WSADATA wsaData;
     SOCKET ConnectSocket = INVALID_SOCKET;
     struct addrinfo *result = NULL, *ptr = NULL, hints;
-    //   char recvbuf[DEFAULT_BUFLEN];
     int iResult;
-    //   int recvbuflen = DEFAULT_BUFLEN;
 
     // Initialize Winsock
     iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
@@ -106,58 +98,56 @@ int client_thread()
         return 1;
     }
 
-    char* recvbuf{nullptr};
+    /*char* recvbuf{nullptr};*/
     size_t current_buffer_size{0};
 
     while (true)
     {
-        if (need_buffer_resize)
+        if (_need_exchange_buffer_resize)
         {
-            if (current_buffer_size < buffer_size)
+            if (current_buffer_size < _exchange_buffer_size)
             {
-                current_buffer_size = buffer_size;
-                delete[] recvbuf;
-                recvbuf = new char[current_buffer_size];
+                current_buffer_size = _exchange_buffer_size;
+                _exchange_buffer = std::shared_ptr<char[]>(new char[current_buffer_size]);  /////////////////////////////////////
 
-                //std::cout << " New Buffer Size: " << current_buffer_size << std::endl;
+                // std::cout << " New Buffer Size: " << current_buffer_size << std::endl;
             }
-            need_buffer_resize = false;
+            _need_exchange_buffer_resize = false;
         }
 
-        while (!out_message_ready)
+        while (!_out_message_ready)
         {
         }
 
-        // std::cout <<"OutMessage: " << message << std::endl;
+        iResult = send(ConnectSocket, _exchange_buffer.get(), _message_length, 0);  //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-        std::copy(message.begin(), message.end(), recvbuf);
-        iResult = send(ConnectSocket, recvbuf, message.size(), 0);
         if (iResult == SOCKET_ERROR)
         {
             printf("send failed with error: %d\n", WSAGetLastError());
             closesocket(ConnectSocket);
             WSACleanup();
-            server_error = true;
+            _server_error = true;
             break;
         }
-        out_message_ready = false;
+        _out_message_ready = false;
         // printf("Bytes Sent: %ld\n", iResult);
 
-        if (message == "0")
+        if (*(reinterpret_cast<int*>(_exchange_buffer.get())) ==
+            static_cast<int>(OperationCode::STOP))  // TODO Check exit
+                                                    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         {
             // shutdown the connection since no more data will be sent
             iResult = shutdown(ConnectSocket, SD_SEND);
-            server_error = true;
+            _server_error = true;
             break;
-
         }
 
-        iResult = recv(ConnectSocket, recvbuf, current_buffer_size, 0);
+        iResult = recv(ConnectSocket, _exchange_buffer.get(), current_buffer_size, 0);  ///////////////////////////////////////
         if (iResult > 0)
         {
             // printf("Bytes received: %d\n", iResult);
-            message = std::string(recvbuf, iResult);
-            in_message_ready = true;
+            // message = std::string(recvbuf, iResult);
+            _in_message_ready = true;
 
             // std::cout << "InMessage: " << message << std::endl;
         }
@@ -171,27 +161,22 @@ int client_thread()
             printf("recv failed with error: %d\n", WSAGetLastError());
             break;
         }
-
     }
     // cleanup
     closesocket(ConnectSocket);
     WSACleanup();
 
-    delete[] recvbuf;
-
+    _exchange_buffer = nullptr;  ////////////////////////////////////////////////////////////////////////////
     return 0;
 }
 
 #elif defined __linux__
-int client_thread()
+auto Client::client_thread() -> int
 {
 
     int socket_file_descriptor, connection;
     struct sockaddr_in serveraddress, client;
 
-    char* recvbuf{nullptr};
-
-    // Ñîçäàäèì ñîêåò
     socket_file_descriptor = socket(AF_INET, SOCK_STREAM, 0);
     if (socket_file_descriptor == -1)
     {
@@ -199,71 +184,60 @@ int client_thread()
         exit(1);
     }
 
-    // Óñòàíîâèì àäðåñ ñåðâåðà
     serveraddress.sin_addr.s_addr = inet_addr("127.0.0.1");
-    // Çàäàäèì íîìåð ïîðòà
     serveraddress.sin_port = htons(DEFAULT_PORT);
-    // Èñïîëüçóåì IPv4
     serveraddress.sin_family = AF_INET;
-    // Óñòàíîâèì ñîåäèíåíèå ñ ñåðâåðîì
     connection = connect(socket_file_descriptor, (struct sockaddr*)&serveraddress, sizeof(serveraddress));
     if (connection == -1)
     {
         std::cout << "Connection with the server failed.!" << std::endl;
         exit(1);
     }
-    // Âçàèìîäåéñòâèå ñ ñåðâåðîì
+
     size_t current_buffer_size{0};
 
     while (1)
     {
-        if (need_buffer_resize)
+        if (_need_exchange_buffer_resize)
         {
-            if (current_buffer_size < buffer_size)
+            if (current_buffer_size < _exchange_buffer_size)
             {
-                current_buffer_size = buffer_size;
-                delete[] recvbuf;
-                recvbuf = new char[current_buffer_size];
-
-                //std::cout << " New Buffer Size: " << current_buffer_size << std::endl;
+                current_buffer_size = _exchange_buffer_size;
+                _exchange_buffer = std::shared_ptr<char[]>(new char[current_buffer_size]);
             }
-            need_buffer_resize = false;
+            _need_exchange_buffer_resize = false;
         }
-        while (!out_message_ready)
+        while (!_out_message_ready)
         {
         }
 
-        //        bzero(recvbuf, sizeof(recvbuf));
-        std::copy(message.begin(), message.end(), recvbuf);
+        ssize_t bytes = write(socket_file_descriptor, _exchange_buffer.get(), _message_length);
 
-        //        ssize_t bytes = write(socket_file_descriptor, recvbuf, message.size());
-        if (message == "0")
+        if (bytes >= 0)
         {
-            write(socket_file_descriptor, recvbuf, message.size());
-            std::cout << "Client Exit." << std::endl;
-            server_error = true;
+            _out_message_ready = false;
+        }
+        else
+        {
+            _server_error = true;
             break;
         }
 
-        ssize_t bytes = write(socket_file_descriptor, recvbuf, message.size());
-
-        // Åñëè ïåðåäàëè >= 0  áàéò, çíà÷èò ïåðåñûëêà ïðîøëà óñïåøíî
-        if (bytes >= 0)
+        if (*(reinterpret_cast<int*>(_exchange_buffer.get())) == static_cast<int>(OperationCode::STOP))
         {
-            out_message_ready = false;
+            _server_error = true;
+            break;
         }
-        bzero(recvbuf, sizeof(recvbuf));
-        // Æäåì îòâåòà îò ñåðâåðà
-        ssize_t length = read(socket_file_descriptor, recvbuf, current_buffer_size);
+
+        ssize_t length = read(socket_file_descriptor, _exchange_buffer.get(), current_buffer_size);
         if (length > 0)
         {
-            message = std::string(recvbuf, length);
-            in_message_ready = true;
+            _in_message_ready = true;
         }
     }
-    // çàêðûâàåì ñîêåò, çàâåðøàåì ñîåäèíåíèå
+
     close(connection);
-    delete[] recvbuf;
+    _exchange_buffer = nullptr;
 
     return 0;
 }
@@ -272,47 +246,52 @@ int client_thread()
 
 auto Client::run() -> void
 {
-    std::thread tr(&client_thread);
+    std::thread tr(&Client::client_thread, this);
     tr.detach();
 }
 
 auto Client::getOutMessageReady() const -> bool
 {
-    return out_message_ready;
+    return _out_message_ready;
 }
 
-auto Client::setOutMessageReady(bool flag) const -> void
+auto Client::setOutMessageReady(bool flag) -> void
 {
-    out_message_ready = flag;
+    _out_message_ready = flag;
 }
 
 auto Client::getInMessageReady() const -> bool
 {
-    return in_message_ready;
+    return _in_message_ready;
 }
 
-auto Client::setInMessageReady(bool flag) const -> void
+auto Client::setInMessageReady(bool flag) -> void
 {
-    in_message_ready = flag;
+    _in_message_ready = flag;
 }
 
-auto Client::getMessage() -> const std::string&
+auto Client::getMessage() -> char*
 {
-    return message;
+    return _exchange_buffer.get();
 }
 
-auto Client::setMessage(const std::string& msg) const -> void
+auto Client::setMessage(const char* msg, size_t msg_length) -> void
 {
-    message = msg;
+    _message_length = msg_length;
+
+    for (auto i{0}; i < _message_length; ++i)
+    {
+        _exchange_buffer[i] = msg[i];
+    }
 }
 
 auto Client::getServerError() const -> bool
 {
-    return server_error;
+    return _server_error;
 }
 
-auto Client::setBufferSize(size_t size) const -> void
+auto Client::setBufferSize(size_t size) -> void
 {
-    buffer_size = size;
-    need_buffer_resize = true;
+    _exchange_buffer_size = size;
+    _need_exchange_buffer_resize = true;
 }
