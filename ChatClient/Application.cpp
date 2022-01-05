@@ -11,7 +11,6 @@
 
 #include "Utils.h"
 
-
 //#include "Chat.h"
 //#include "Message.h"
 //#include "User.h"
@@ -71,41 +70,45 @@ auto Application::run() -> void
 
 auto Application::createAccount() -> void
 {
-    std::string user_name{};
-    createAccount_inputName(user_name);
+    std::vector<std::string> reg_data(5);
+    createAccount_inputName(reg_data[0]);
 
-    std::string user_login;
-    createAccount_inputLogin(user_login);
+    createAccount_inputSurname(reg_data[1]);
 
-    std::string user_password;
-    createAccount_inputPassword(user_password);
+    createAccount_inputEmail(reg_data[2]);
+
+    createAccount_inputLogin(reg_data[3]);
+
+    createAccount_inputPassword(reg_data[4]);
 
     std::cout << BOLDYELLOW << std::endl << "Create account?(Y/N): " << BOLDGREEN;
     if (!Utils::isOKSelect()) return;
 
-    std::string result = user_name + " " + user_login + " " + user_password;
-
- //   sendToServer(result, OperationCode::REGISTRATION);  // in result now OK or ERROR with LOGIN or NAME
-
-    std::stringstream stream(result);
-
-    stream >> result;
-
-    if (result == RETURN_ERROR)
+    std::string query{};
+    query.reserve(1024);
+    for (auto i{0}; i < 5; ++i)
     {
-        stream >> result;
-        if (result == "NAME")
+        query += reg_data[i];
+        query.push_back(0);
+        query[query.size() - 1] = '\0';
+    }
+
+    auto result{sendToServer(query.c_str(), query.size(), OperationCode::REGISTRATION)};  // in result now OK or ERROR
+
+    if (strcmp(result,RETURN_OK.c_str()))
+    {
+        auto ptr_shift = strlen(result) + 2; // pointer in the next word 
+        if (!strcmp((result + ptr_shift), "EMAIL"))
         {
-            std::cout << std::endl << RED << "Please change name!" << RESET << std::endl;
+            std::cout << std::endl << RED << "Please change email!" << RESET << std::endl;
             return;
         }
-        else if (result == "LOGIN")
+        else if (!strcmp((result + ptr_shift),"LOGIN"))
         {
             std::cout << std::endl << RED << "Please change login." << RESET << std::endl;
             return;
         }
     }
- //   ++_current_user_number;
 }
 
 auto Application::createAccount_inputName(std::string& user_name) -> void
@@ -113,18 +116,36 @@ auto Application::createAccount_inputName(std::string& user_name) -> void
     std::cout << std::endl;
     std::cout << BOLDYELLOW << UNDER_LINE << "Create account:" << RESET << std::endl;
     auto isOK{false};
+    std::cout << "Name(max " << MAX_INPUT_SIZE << " letters): ";
+    std::cout << BOLDGREEN;
+    Utils::getString(user_name);
+    std::cout << RESET;
+}
+
+auto Application::createAccount_inputSurname(std::string& surname) -> void
+{
+    std::cout << "Surname(max " << MAX_INPUT_SIZE << " letters): ";
+    std::cout << BOLDGREEN;
+    Utils::getString(surname);
+    std::cout << RESET;
+}
+
+auto Application::createAccount_inputEmail(std::string& user_email) -> void
+{
+    auto isOK{false};
+
     while (!isOK)
     {
-        std::cout << "Name(max " << MAX_INPUT_SIZE << " letters): ";
+        std::cout << "Email(max " << MAX_INPUT_SIZE << " letters): ";
         std::cout << BOLDGREEN;
-        Utils::getString(user_name);
+        Utils::getString(user_email);
         std::cout << RESET;
 
-        auto result{sendToServer(user_name.c_str(), user_name.size(), OperationCode::CHECK_NAME)};  // in result now OK or ERROR
+        auto result{sendToServer(user_email.c_str(), user_email.size(), OperationCode::CHECK_EMAIL)};  // in result now OK or ERROR
 
-        if (strcmp(result,RETURN_OK))
+        if (strcmp(result, RETURN_OK.c_str()))
         {
-            std::cout << std::endl << RED << "Please change name!" << RESET << std::endl;
+            std::cout << std::endl << RED << "Please change email!" << RESET << std::endl;
         }
         else
         {
@@ -133,23 +154,22 @@ auto Application::createAccount_inputName(std::string& user_name) -> void
     }
 }
 
-auto Application::createAccount_inputLogin(std::string& user_login) const -> void
+auto Application::createAccount_inputLogin(std::string& user_login) -> void
 {
     auto isOK{false};
 
     while (!isOK)
     {
-        std::cout << std::endl << "Login(max " << MAX_INPUT_SIZE << " letters): ";
+        std::cout << "Login(max " << MAX_INPUT_SIZE << " letters): ";
         std::cout << BOLDGREEN;
         Utils::getString(user_login);
         std::cout << RESET;
 
-        std::string result = user_login;
- //       sendToServer(result, OperationCode::CHECK_LOGIN);  // in result now OK or ERROR
+        auto result{sendToServer(user_login.c_str(), user_login.size(), OperationCode::CHECK_LOGIN)};  // in result now OK or ERROR
 
-        if (result == RETURN_ERROR)
+        if (strcmp(result, RETURN_OK.c_str()))
         {
-            std::cout << std::endl << RED << "Please change login." << RESET;
+            std::cout << std::endl << RED << "Please change login!" << RESET << std::endl;
         }
         else
         {
@@ -184,12 +204,12 @@ auto Application::createAccount_inputPassword(std::string& user_password) const 
 
 auto Application::signIn() -> void
 {
-    //std::cout << std::endl;
-    //std::cout << BOLDYELLOW << UNDER_LINE << "Sign In:" << RESET << std::endl;
+    // std::cout << std::endl;
+    // std::cout << BOLDYELLOW << UNDER_LINE << "Sign In:" << RESET << std::endl;
 
-    //std::string user_login{};
-    //std::string user_password{};
-    //while (true)
+    // std::string user_login{};
+    // std::string user_password{};
+    // while (true)
     //{
     //    signIn_inputLogin(user_login);
     //    signIn_inputPassword(user_password);
@@ -227,8 +247,8 @@ auto Application::signIn_inputPassword(std::string& user_password) const -> void
 
 auto Application::selectCommonOrPrivate() -> void
 {
-    //auto isContinue{true};
-    //while (isContinue)
+    // auto isContinue{true};
+    // while (isContinue)
     //{
     //    std::string result = std::to_string(_user_id);
     //    sendToServer(result, OperationCode::NEW_MESSAGES);  // in result now number of new messages
@@ -255,10 +275,10 @@ auto Application::selectCommonOrPrivate() -> void
     //    }
     //}
 
-    //return;
+    // return;
 }
 
-//auto Application::commonChat(const std::shared_ptr<User>& user) const -> int
+// auto Application::commonChat(const std::shared_ptr<User>& user) const -> int
 //{
 //    //auto isContinue{true};
 //    //while (isContinue)
@@ -292,7 +312,7 @@ auto Application::selectCommonOrPrivate() -> void
 //    //return SUCCESSFUL;
 //}
 
-//auto Application::commonChat_addMessage() const -> void
+// auto Application::commonChat_addMessage() const -> void
 //{
 //    //std::string new_message{};
 //
@@ -307,7 +327,7 @@ auto Application::selectCommonOrPrivate() -> void
 //    //sendToServer(result, OperationCode::COMMON_CHAT_ADD_MESSAGE);  // in result now OK or ERROR
 //}
 
-//auto Application::commonChat_editMessage(const std::shared_ptr<User>& user) const -> void
+// auto Application::commonChat_editMessage(const std::shared_ptr<User>& user) const -> void
 //{
 //    //std::cout << std::endl << YELLOW << "Select message number for editing: " << BOLDGREEN;
 //    //int message_number{Utils::inputIntegerValue()};
@@ -315,7 +335,7 @@ auto Application::selectCommonOrPrivate() -> void
 //    //_common_chat->editMessage(user, message_number - 1);  // array's indices begin from 0, Output indices begin from 1
 //}
 
-//auto Application::commonChat_deleteMessage(const std::shared_ptr<User>& user) const -> void
+// auto Application::commonChat_deleteMessage(const std::shared_ptr<User>& user) const -> void
 //{
 //    //std::cout << std::endl << YELLOW << "Select message number for deleting: " << BOLDGREEN;
 //    //int message_number{Utils::inputIntegerValue()};
@@ -323,14 +343,15 @@ auto Application::selectCommonOrPrivate() -> void
 //    //_common_chat->deleteMessage(user, message_number - 1);  // array's indices begin from 0, Output indices begin from 1
 //}
 
-//auto Application::privateMenu(const std::shared_ptr<User>& user) -> int
+// auto Application::privateMenu(const std::shared_ptr<User>& user) -> int
 //{
 //    //auto isContinue{true};
 //    //while (isContinue)
 //    //{
 //    //    printNewMessagesUsers(user);
 //
-//    //    std::string menu_arr[]{"Private Chat:", "View chat users names", "Select target user by name", "Select target user by ID", "Exit"};
+//    //    std::string menu_arr[]{"Private Chat:", "View chat users names", "Select target user by name", "Select target user by ID",
+//    "Exit"};
 //
 //    //    auto menu_item{menu(menu_arr, 5)};
 //
@@ -350,7 +371,7 @@ auto Application::selectCommonOrPrivate() -> void
 //    //return 0;
 //}
 
-//auto Application::privateMenu_viewUsersNames() const -> void
+// auto Application::privateMenu_viewUsersNames() const -> void
 //{
 //    //std::cout << std::endl;
 //    //std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << "ID"
@@ -358,7 +379,8 @@ auto Application::selectCommonOrPrivate() -> void
 //
 //    //for (auto i{0}; i < _current_user_number; ++i)
 //    //{
-//    //    std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << i + 1 << "." << BOLDYELLOW << std::setw(MAX_INPUT_SIZE)
+//    //    std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << i + 1 << "." << BOLDYELLOW <<
+//    std::setw(MAX_INPUT_SIZE)
 //    //              << std::setfill(' ') << std::left << _user_array[i]->getUserName()
 //    //              << std::endl;  // array's indices begin from 0, Output indices begin from 1
 //    //    if (!((i + 1) % LINE_TO_PAGE))
@@ -370,7 +392,7 @@ auto Application::selectCommonOrPrivate() -> void
 //    //std::cout << RESET;
 //}
 //
-//auto Application::privateMenu_selectByName(const std::shared_ptr<User>& user) const -> int
+// auto Application::privateMenu_selectByName(const std::shared_ptr<User>& user) const -> int
 //{
 //    //auto index{UNSUCCESSFUL};
 //    //auto isOK{false};
@@ -393,7 +415,7 @@ auto Application::selectCommonOrPrivate() -> void
 //    //return index;
 //}
 //
-//auto Application::privateMenu_selectByID(const std::shared_ptr<User>& user) -> void
+// auto Application::privateMenu_selectByID(const std::shared_ptr<User>& user) -> void
 //{
 //    //std::cout << std::endl << RESET << YELLOW << "Input target user ID: " << BOLDGREEN;
 //    //auto index{Utils::inputIntegerValue()};
@@ -408,7 +430,7 @@ auto Application::selectCommonOrPrivate() -> void
 //    //}
 //}
 //
-//auto Application::printNewMessagesUsers(const std::shared_ptr<User>& user) -> void
+// auto Application::printNewMessagesUsers(const std::shared_ptr<User>& user) -> void
 //{
 //    //auto new_message{_new_messages_array[user->getUserID()]};
 //    //auto user_number{new_message->usersNumber()};
@@ -426,13 +448,15 @@ auto Application::selectCommonOrPrivate() -> void
 //    //        auto msg_vector{new_message->getMessages(userID)};
 //    //        auto msg_number{msg_vector.size()};
 //    //        std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << userID + 1 << "." << BOLDYELLOW
-//    //                  << std::setw(MAX_INPUT_SIZE) << std::setfill(' ') << std::left << _user_array[userID]->getUserName() << RESET << GREEN
-//    //                  << "(" << msg_number << " new message(s))" << std::endl;  // array's indices begin from 0, Output indices begin from 1
+//    //                  << std::setw(MAX_INPUT_SIZE) << std::setfill(' ') << std::left << _user_array[userID]->getUserName() << RESET <<
+//    GREEN
+//    //                  << "(" << msg_number << " new message(s))" << std::endl;  // array's indices begin from 0, Output indices begin
+//    from 1
 //    //    }
 //    //}
 //}
 //
-//auto Application::privateChat(const std::shared_ptr<User>& source_user, const std::shared_ptr<User>& target_user) -> int
+// auto Application::privateChat(const std::shared_ptr<User>& source_user, const std::shared_ptr<User>& target_user) -> int
 //{
 //    //auto isContinue{true};
 //
@@ -470,7 +494,7 @@ auto Application::selectCommonOrPrivate() -> void
 //    //return 0;
 //}
 
-//auto Application::privateChat_addMessage(
+// auto Application::privateChat_addMessage(
 //    const std::shared_ptr<User>& source_user, const std::shared_ptr<User>& target_user, std::shared_ptr<Chat>& chat) -> void
 //{
 //    //if (!chat->isInitialized())
@@ -502,8 +526,7 @@ auto Application::selectCommonOrPrivate() -> void
 //    //_new_messages_array[index]->addNewMessage(message);
 //}
 
-
-//auto Application::privateChat_editMessage(
+// auto Application::privateChat_editMessage(
 //    const std::shared_ptr<User>& source_user, const std::shared_ptr<User>& target_user, const std::shared_ptr<Chat>& chat) const -> void
 //{
 //    //std::cout << std::endl << RESET << YELLOW << "Select message number for editing: " << BOLDGREEN;
@@ -519,7 +542,7 @@ auto Application::selectCommonOrPrivate() -> void
 //    //}
 //}
 
-//auto Application::privateChat_deleteMessage(
+// auto Application::privateChat_deleteMessage(
 //    const std::shared_ptr<User>& source_user, const std::shared_ptr<User>& target_user, const std::shared_ptr<Chat>& chat) const -> void
 //{
 //    //std::cout << std::endl << RESET << YELLOW << "Select message number for deleting: " << BOLDGREEN;
@@ -527,7 +550,8 @@ auto Application::selectCommonOrPrivate() -> void
 //    //std::cout << RESET;
 //    //if (chat->isInitialized())
 //    //{
-//    //    auto message{chat->deleteMessage(source_user, message_number - 1)};  // array's indices begin from 0, Output indices begin from 1
+//    //    auto message{chat->deleteMessage(source_user, message_number - 1)};  // array's indices begin from 0, Output indices begin from
+//    1
 //    //    if (!message->isInitialized()) return;
 //
 //    //    auto index{target_user->getUserID()};
@@ -535,7 +559,7 @@ auto Application::selectCommonOrPrivate() -> void
 //    //}
 //}
 
-//auto Application::getPrivateChat(const std::shared_ptr<User>& source_user, const std::shared_ptr<User>& target_user) const
+// auto Application::getPrivateChat(const std::shared_ptr<User>& source_user, const std::shared_ptr<User>& target_user) const
 //    -> const std::shared_ptr<Chat>
 //{
 //    //long long first_userID{source_user->getUserID()};
@@ -555,7 +579,7 @@ auto Application::selectCommonOrPrivate() -> void
 //    //return std::make_shared<Chat>();
 //}
 
-//auto Application::checkingForStringExistence(const std::string& string, const std::string& (User::*get)() const) const -> int
+// auto Application::checkingForStringExistence(const std::string& string, const std::string& (User::*get)() const) const -> int
 //{
 //    //for (auto i{0}; i < _current_user_number; ++i)
 //    //{
@@ -582,8 +606,6 @@ auto Application::menu(std::string* string_arr, int size) const -> int
     return menu_item;
 }
 
-
-
 auto Application::sendToServer(const char* message, size_t message_length, OperationCode operation_code) -> const char*
 {
     if (_msg_buffer_size < message_length + HEADER_SIZE)
@@ -602,7 +624,7 @@ auto Application::sendToServer(const char* message, size_t message_length, Opera
 
     _current_msg_length = 0;
 
-    addToBuffer(_msg_buffer, _current_msg_length, static_cast<int>(OperationCode::CHECK_NAME));
+    addToBuffer(_msg_buffer, _current_msg_length, static_cast<int>(operation_code));
     addToBuffer(_msg_buffer, _current_msg_length, static_cast<int>(OperationCode::CHECK_SIZE));
     addToBuffer(_msg_buffer, _current_msg_length, message, message_length);
 
@@ -617,7 +639,7 @@ auto Application::sendToServer(const char* message, size_t message_length, Opera
 
     _current_msg_length = 0;
 
-    addToBuffer(_msg_buffer, _current_msg_length, static_cast<int>(OperationCode::CHECK_NAME));
+    addToBuffer(_msg_buffer, _current_msg_length, static_cast<int>(operation_code));
     addToBuffer(_msg_buffer, _current_msg_length, static_cast<int>(OperationCode::READY));
 
     receive_buf = talkToServer(_msg_buffer, _current_msg_length);

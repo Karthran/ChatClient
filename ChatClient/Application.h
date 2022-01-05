@@ -41,7 +41,9 @@ private:
 
     auto createAccount() -> void;
     auto createAccount_inputName(std::string& name) -> void;
-    auto createAccount_inputLogin(std::string& login) const -> void;
+    auto createAccount_inputSurname(std::string& surname) -> void;
+    auto createAccount_inputEmail(std::string& email) -> void;
+    auto createAccount_inputLogin(std::string& login) -> void;
     auto createAccount_inputPassword(std::string& password) const -> void;
 
     auto signIn() -> void;

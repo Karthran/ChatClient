@@ -41,9 +41,9 @@ const std::string BOLDCYAN = "\033[1m\033[36m";    /* Bold Cyan */
 const std::string BOLDWHITE = "\033[1m\033[37m";   /* Bold White */
 #endif                                             //  
 
-const char* RETURN_ERROR = "ERROR";
-const char* RETURN_OK = "OK";
-const char DELIMITER = '\0';
+const std::string RETURN_ERROR = "ERROR";
+const std::string RETURN_OK = "OK";
+const std::string DELIMITER = " ";
 
 
 const int MAX_INPUT_SIZE = 255;
