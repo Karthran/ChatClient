@@ -615,6 +615,9 @@ auto Application::sendToServer(const char* message, size_t message_length, Opera
         delete[] _msg_buffer;
         _msg_buffer = new char[_msg_buffer_size];
     }
+
+    _client->setBufferSize(message_length + HEADER_SIZE);
+
     _current_msg_length = 0;
 
     addToBuffer(_msg_buffer, _current_msg_length, static_cast<int>(OperationCode::CHECK_SIZE));
