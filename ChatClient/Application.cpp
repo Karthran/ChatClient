@@ -46,6 +46,9 @@ auto Application::run() -> void
 
     std::cout << std::endl << BOLDYELLOW << UNDER_LINE << "Wellcome to Console Chat!" << RESET << std::endl;
 
+    _user_id.push_back('0');
+    _user_id[_user_id.size() - 1] = '\0';
+
     auto isContinue{true};
     while (isContinue)
     {
@@ -58,9 +61,10 @@ auto Application::run() -> void
             case 1: signIn(); break;
             case 2: createAccount(); break;
             default:
-                char stop[4];
+                char stop[64];
                 size_t size{0};
                 addToBuffer(stop, size, static_cast<int>(OperationCode::STOP));
+                addToBuffer(stop, size, _user_id.c_str(),_user_id.size());
                 talkToServer(stop, size);
                 isContinue = false;
                 break;
@@ -228,13 +232,14 @@ auto Application::signIn() -> void
         query.push_back('0');
         query[query.size() - 1] = '\0';
 
-        auto result{sendToServer(query.c_str(), query.size(), OperationCode::SIGN_IN)};  // in result now OK or ERROR
+        auto result{sendToServer(query.c_str(), query.size(), OperationCode::SIGN_IN)};  // in result now ID or ERROR
 
         if (strcmp(result, RETURN_ERROR.c_str()))
         {
             auto res_length{strlen(result)};
-            std::string id{(result)};
-            _user_id = std::stoi(id);
+            _user_id = result;
+            _user_id.push_back('0');
+            _user_id[_user_id.size() - 1] = '\0';
             selectCommonOrPrivate();
             return;
         }
@@ -259,85 +264,83 @@ auto Application::signIn_inputPassword(std::string& user_password) const -> void
 
 auto Application::selectCommonOrPrivate() -> void
 {
-    // auto isContinue{true};
-    // while (isContinue)
-    //{
-    //    std::string result = std::to_string(_user_id);
-    //    sendToServer(result, OperationCode::NEW_MESSAGES);  // in result now number of new messages
+     auto isContinue{true};
+     while (isContinue)
+    {
+        std::string result = _user_id;
+        //sendToServer(result, OperationCode::NEW_MESSAGES);  // in result now number of new messages
 
-    //    std::string menu_arr[] = {"Select chat type:", "Common chat", "Private chat", "Sign Out"};
+        std::string menu_arr[] = {"Select chat type:", "Common chat", "Private chat", "Sign Out"};
 
-    //    auto user_number{std::stoi(result)};
+        //auto user_number{std::stoi(result)};
+        //if (user_number)  // if exist new message for this user
+        //{
+        //    menu_arr[2] = BOLDYELLOW + menu_arr[2] + RESET + GREEN + "(New message(s) from " + std::to_string(user_number) + " user(s))" +
+        //                  RESET;  // menu_arr[2] = "Private chat"
+        //}
 
-    //    if (user_number)  // if exist new message for this user
-    //    {
-    //        menu_arr[2] = BOLDYELLOW + menu_arr[2] + RESET + GREEN + "(New message(s) from " + std::to_string(user_number) + " user(s))" +
-    //                      RESET;  // menu_arr[2] = "Private chat"
-    //    }
+        auto menu_item{menu(menu_arr, 4)};
 
-    //    auto menu_item{menu(menu_arr, 4)};
+        switch (menu_item)
+        {
+            case 1: commonChat(); break;
+            case 2:/* privateMenu();*/ break;
+            default: isContinue = false; break;
+        }
+    }
 
-    //    const std::shared_ptr<User> user;
-
-    //    switch (menu_item)
-    //    {
-    //        case 1: commonChat(user); break;
-    //        case 2: privateMenu(user); break;
-    //        default: isContinue = false; break;
-    //    }
-    //}
-
-    // return;
+     return;
 }
 
-// auto Application::commonChat(const std::shared_ptr<User>& user) const -> int
-//{
-//    //auto isContinue{true};
-//    //while (isContinue)
-//    //{
-//    //    std::string menu_arr[]{"Common Chat:", "View chat", "Add message", "Edit message", "Delete message", "Exit"};
-//    //    auto menu_item{menu(menu_arr, 6)};
-//
-//    //    switch (menu_item)
-//    //    {
-//    //        case 1:
-//    //        {
-//    //            std::cout << std::endl;
-//    //            std::string result = "-1" + DELIMITER + "-1";                      // -1 common chat users id
-//    //            sendToServer(result, OperationCode::GET_NUMBER_MESSAGES_IN_CHAT);  // in result now number of new messages
-//    //            if (result == RETURN_ERROR) break;
-//    //            auto message_num{std::stoi(result)};
-//    //            for (auto i{0}; i < message_num; ++i)
-//    //            {
-//    //                result = std::to_string(i);
-//    //                sendToServer(result, OperationCode::COMMON_CHAT_GET_MESSAGE);  // in result now OK or ERROR
-//    //                std::cout << result;
-//    //            }
-//    //            break;
-//    //        }
-//    //        case 2: commonChat_addMessage(); break;
-//    //        case 3: commonChat_editMessage(user); break;
-//    //        case 4: commonChat_deleteMessage(user); break;
-//    //        default: isContinue = false; break;
-//    //    }
-//    //}
-//    //return SUCCESSFUL;
-//}
+ auto Application::commonChat() -> int
+{
+    auto isContinue{true};
+    while (isContinue)
+    {
+        std::string menu_arr[]{"Common Chat:", "View chat", "Add message", "Edit message", "Delete message", "Exit"};
+        auto menu_item{menu(menu_arr, 6)};
 
-// auto Application::commonChat_addMessage() const -> void
-//{
-//    //std::string new_message{};
-//
-//    //std::cout << std::endl << YELLOW << "Input message: " << BOLDGREEN;
-//    //std::getline(std::cin, new_message);
-//    //std::cout << RESET;
-//    //std::cout << BOLDYELLOW << "Send message?(Y/N):" << BOLDGREEN;
-//    //std::cout << RESET;
-//
-//    //if (!Utils::isOKSelect()) return;
-//    //std::string result{std::to_string(_user_id) + DELIMITER + new_message};
-//    //sendToServer(result, OperationCode::COMMON_CHAT_ADD_MESSAGE);  // in result now OK or ERROR
-//}
+        switch (menu_item)
+        {
+            case 1:
+            {
+
+                //std::cout << std::endl;
+                //std::string result = "-1" + DELIMITER + "-1";                      // -1 common chat users id
+                //sendToServer(result, OperationCode::GET_NUMBER_MESSAGES_IN_CHAT);  // in result now number of new messages
+                //if (result == RETURN_ERROR) break;
+                //auto message_num{std::stoi(result)};
+                //for (auto i{0}; i < message_num; ++i)
+                //{
+                //    result = std::to_string(i);
+                //    sendToServer(result, OperationCode::COMMON_CHAT_GET_MESSAGE);  // in result now OK or ERROR
+                //    std::cout << result;
+                //}
+                break;
+            }
+            case 2: commonChat_addMessage(); break;
+            case 3: /*commonChat_editMessage(user);*/ break;
+            case 4: /*commonChat_deleteMessage(user);*/ break;
+            default: isContinue = false; break;
+        }
+    }
+    return SUCCESSFUL;
+}
+
+ auto Application::commonChat_addMessage() -> void
+{
+    std::string new_message{};
+
+    std::cout << std::endl << YELLOW << "Input message: " << BOLDGREEN;
+    std::getline(std::cin, new_message);
+    std::cout << RESET;
+    std::cout << BOLDYELLOW << "Send message?(Y/N):" << BOLDGREEN;
+    std::cout << RESET;
+
+    if (!Utils::isOKSelect()) return;
+
+    sendToServer(new_message.c_str(), new_message.size(), OperationCode::COMMON_CHAT_ADD_MESSAGE);  // in result now OK or ERROR
+}
 
 // auto Application::commonChat_editMessage(const std::shared_ptr<User>& user) const -> void
 //{

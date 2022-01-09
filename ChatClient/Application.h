@@ -29,7 +29,7 @@ private:
     size_t _current_msg_length{0};
 
     std::string _self_path{};
-    int _user_id{-1};
+    std::string _user_id{"0"};
 
     auto talkToServer(const char* message, size_t msg_length) const -> char*;
 
@@ -52,8 +52,8 @@ private:
 
     auto selectCommonOrPrivate() -> void;
 
-    //auto commonChat(const std::shared_ptr<User>& user) const -> int;
-    //auto commonChat_addMessage() const -> void;
+    auto commonChat() -> int;
+    auto commonChat_addMessage() -> void;
     //auto commonChat_editMessage(const std::shared_ptr<User>& user) const -> void;
     //auto commonChat_deleteMessage(const std::shared_ptr<User>& user) const -> void;
 
