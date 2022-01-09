@@ -62,6 +62,7 @@ auto Application::run() -> void
                 size_t size{0};
                 addToBuffer(stop, size, static_cast<int>(OperationCode::STOP));
                 talkToServer(stop, size);
+                isContinue = false;
                 break;
         }
     }
@@ -75,9 +76,9 @@ auto Application::createAccount() -> void
 
     createAccount_inputSurname(reg_data[1]);
 
-    createAccount_inputEmail(reg_data[2]);
+    createAccount_inputLogin(reg_data[2]);
 
-    createAccount_inputLogin(reg_data[3]);
+    createAccount_inputEmail(reg_data[3]);
 
     createAccount_inputPassword(reg_data[4]);
 
@@ -89,23 +90,27 @@ auto Application::createAccount() -> void
     for (auto i{0}; i < 5; ++i)
     {
         query += reg_data[i];
-        query.push_back(0);
+        query.push_back('0');
         query[query.size() - 1] = '\0';
     }
 
-    auto result{sendToServer(query.c_str(), query.size(), OperationCode::REGISTRATION)};  // in result now OK or ERROR
+    auto result{sendToServer(query.c_str(), query.size(), OperationCode::REGISTRATION)};
 
-    if (strcmp(result,RETURN_OK.c_str()))
+    if (strcmp(result, RETURN_OK.c_str()))
     {
-        auto ptr_shift = strlen(result) + 2; // pointer in the next word 
-        if (!strcmp((result + ptr_shift), "EMAIL"))
+        if (!strcmp(result, "EMAIL"))
         {
             std::cout << std::endl << RED << "Please change email!" << RESET << std::endl;
             return;
         }
-        else if (!strcmp((result + ptr_shift),"LOGIN"))
+        else if (!strcmp(result, "LOGIN"))
         {
-            std::cout << std::endl << RED << "Please change login." << RESET << std::endl;
+            std::cout << std::endl << RED << "Please change login!" << RESET << std::endl;
+            return;
+        }
+        else
+        {
+            std::cout << std::endl << RED << "Invalid user information!" << RESET << std::endl;
             return;
         }
     }
@@ -204,33 +209,40 @@ auto Application::createAccount_inputPassword(std::string& user_password) const 
 
 auto Application::signIn() -> void
 {
-    // std::cout << std::endl;
-    // std::cout << BOLDYELLOW << UNDER_LINE << "Sign In:" << RESET << std::endl;
+    std::cout << std::endl;
+    std::cout << BOLDYELLOW << UNDER_LINE << "Sign In:" << RESET << std::endl;
 
-    // std::string user_login{};
-    // std::string user_password{};
-    // while (true)
-    //{
-    //    signIn_inputLogin(user_login);
-    //    signIn_inputPassword(user_password);
+    std::string user_login{};
+    std::string user_password{};
+    while (true)
+    {
+        signIn_inputLogin(user_login);
+        signIn_inputPassword(user_password);
 
-    //    std::string result = user_login + " " + user_password;
-    //    sendToServer(result, OperationCode::SIGN_IN);  // in result now OK or ERROR
-    //    std::stringstream stream(result);
-    //    stream >> result;
+        std::string query{};
+        query.reserve(1024);
+        query += user_login;
+        query.push_back('0');
+        query[query.size() - 1] = '\0';
+        query += user_password;
+        query.push_back('0');
+        query[query.size() - 1] = '\0';
 
-    //    if (result == RETURN_OK)
-    //    {
-    //        stream >> result;
-    //        _user_id = std::stoi(result);
-    //        selectCommonOrPrivate();
-    //        return;
-    //    }
+        auto result{sendToServer(query.c_str(), query.size(), OperationCode::SIGN_IN)};  // in result now OK or ERROR
 
-    //    std::cout << std::endl << RED << "Login or Password don't match!" << std::endl;
-    //    std::cout << BOLDYELLOW << std::endl << "Try again?(Y/N):" << BOLDGREEN;
-    //    if (!Utils::isOKSelect()) return;
-    //}
+        if (strcmp(result, RETURN_ERROR.c_str()))
+        {
+            auto res_length{strlen(result)};
+            std::string id{(result)};
+            _user_id = std::stoi(id);
+            selectCommonOrPrivate();
+            return;
+        }
+
+        std::cout << std::endl << RED << "Login or Password don't match!" << std::endl;
+        std::cout << BOLDYELLOW << std::endl << "Try again?(Y/N):" << BOLDGREEN;
+        if (!Utils::isOKSelect()) return;
+    }
 }
 
 auto Application::signIn_inputLogin(std::string& user_login) const -> void
@@ -635,8 +647,10 @@ auto Application::sendToServer(const char* message, size_t message_length, Opera
 
     auto message_size{-1};
     getFromBuffer(receive_buf, sizeof(int), message_size);
+    //   std::cout << "Message Size: " << message_size << std::endl;
 
-    std::cout << "Message Size: " << message_size << std::endl;
+    //    getFromBuffer(receive_buf, sizeof(int), message_size);
+    //    std::cout << "First: " << message_size << std::endl;
 
     _client->setBufferSize(message_size + HEADER_SIZE);
 
@@ -646,6 +660,8 @@ auto Application::sendToServer(const char* message, size_t message_length, Opera
     addToBuffer(_msg_buffer, _current_msg_length, static_cast<int>(OperationCode::READY));
 
     receive_buf = talkToServer(_msg_buffer, _current_msg_length);
+
+    // std::cout << "READY" << std::endl;
 
     receive_buf[message_size] = '\0';
 

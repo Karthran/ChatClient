@@ -122,6 +122,7 @@ auto Utils::getPassword(std::string& password, const std::string& text) -> void
             break;
         }
     }
+
 #elif defined(__linux__)
     password = std::string(getpass(text.c_str()));
 #endif
