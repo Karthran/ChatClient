@@ -42,12 +42,10 @@ auto Application::run() -> void
 
     _client = new Client();
     _client->run();
-    //    loop();
 
     std::cout << std::endl << BOLDYELLOW << UNDER_LINE << "Wellcome to Console Chat!" << RESET << std::endl;
 
-    _user_id.push_back('0');
-    _user_id[_user_id.size() - 1] = '\0';
+    _user_id.push_back('\0');
 
     auto isContinue{true};
     while (isContinue)
@@ -64,7 +62,7 @@ auto Application::run() -> void
                 char stop[64];
                 size_t size{0};
                 addToBuffer(stop, size, static_cast<int>(OperationCode::STOP));
-                addToBuffer(stop, size, _user_id.c_str(),_user_id.size());
+                addToBuffer(stop, size, _user_id.c_str(), _user_id.size());
                 talkToServer(stop, size);
                 isContinue = false;
                 break;
@@ -94,8 +92,7 @@ auto Application::createAccount() -> void
     for (auto i{0}; i < 5; ++i)
     {
         query += reg_data[i];
-        query.push_back('0');
-        query[query.size() - 1] = '\0';
+        query.push_back('\0');
     }
 
     auto result{sendToServer(query.c_str(), query.size(), OperationCode::REGISTRATION)};
@@ -226,11 +223,9 @@ auto Application::signIn() -> void
         std::string query{};
         query.reserve(1024);
         query += user_login;
-        query.push_back('0');
-        query[query.size() - 1] = '\0';
+        query.push_back('\0');
         query += user_password;
-        query.push_back('0');
-        query[query.size() - 1] = '\0';
+        query.push_back('\0');
 
         auto result{sendToServer(query.c_str(), query.size(), OperationCode::SIGN_IN)};  // in result now ID or ERROR
 
@@ -238,8 +233,7 @@ auto Application::signIn() -> void
         {
             auto res_length{strlen(result)};
             _user_id = result;
-            _user_id.push_back('0');
-            _user_id[_user_id.size() - 1] = '\0';
+            _user_id.push_back('\0');
             selectCommonOrPrivate();
             return;
         }
@@ -264,16 +258,16 @@ auto Application::signIn_inputPassword(std::string& user_password) const -> void
 
 auto Application::selectCommonOrPrivate() -> void
 {
-     auto isContinue{true};
-     while (isContinue)
+    auto isContinue{true};
+    while (isContinue)
     {
         std::string result = _user_id;
-        //sendToServer(result, OperationCode::NEW_MESSAGES);  // in result now number of new messages
+        // sendToServer(result, OperationCode::NEW_MESSAGES);  // in result now number of new messages
 
         std::string menu_arr[] = {"Select chat type:", "Common chat", "Private chat", "Sign Out"};
 
-        //auto user_number{std::stoi(result)};
-        //if (user_number)  // if exist new message for this user
+        // auto user_number{std::stoi(result)};
+        // if (user_number)  // if exist new message for this user
         //{
         //    menu_arr[2] = BOLDYELLOW + menu_arr[2] + RESET + GREEN + "(New message(s) from " + std::to_string(user_number) + " user(s))" +
         //                  RESET;  // menu_arr[2] = "Private chat"
@@ -284,15 +278,15 @@ auto Application::selectCommonOrPrivate() -> void
         switch (menu_item)
         {
             case 1: commonChat(); break;
-            case 2:/* privateMenu();*/ break;
+            case 2: /* privateMenu();*/ break;
             default: isContinue = false; break;
         }
     }
 
-     return;
+    return;
 }
 
- auto Application::commonChat() -> int
+auto Application::commonChat() -> int
 {
     auto isContinue{true};
     while (isContinue)
@@ -304,13 +298,18 @@ auto Application::selectCommonOrPrivate() -> void
         {
             case 1:
             {
+                auto result{sendToServer(" ", 1, OperationCode::COMMON_CHAT_GET_MESSAGES)};  // in result now ID or ERROR
 
-                //std::cout << std::endl;
-                //std::string result = "-1" + DELIMITER + "-1";                      // -1 common chat users id
-                //sendToServer(result, OperationCode::GET_NUMBER_MESSAGES_IN_CHAT);  // in result now number of new messages
-                //if (result == RETURN_ERROR) break;
-                //auto message_num{std::stoi(result)};
-                //for (auto i{0}; i < message_num; ++i)
+                auto messages_num{-1};
+                getFromBuffer(result, 0, messages_num);
+                std::cout << "Messages number: " << messages_num << std::endl;
+
+                // std::cout << std::endl;
+                // std::string result = "-1" + DELIMITER + "-1";                      // -1 common chat users id
+                // sendToServer(result, OperationCode::GET_NUMBER_MESSAGES_IN_CHAT);  // in result now number of new messages
+                // if (result == RETURN_ERROR) break;
+                // auto message_num{std::stoi(result)};
+                // for (auto i{0}; i < message_num; ++i)
                 //{
                 //    result = std::to_string(i);
                 //    sendToServer(result, OperationCode::COMMON_CHAT_GET_MESSAGE);  // in result now OK or ERROR
@@ -327,18 +326,19 @@ auto Application::selectCommonOrPrivate() -> void
     return SUCCESSFUL;
 }
 
- auto Application::commonChat_addMessage() -> void
+auto Application::commonChat_addMessage() -> void
 {
     std::string new_message{};
 
     std::cout << std::endl << YELLOW << "Input message: " << BOLDGREEN;
-    std::getline(std::cin, new_message);
+    Utils::getString(new_message);
     std::cout << RESET;
     std::cout << BOLDYELLOW << "Send message?(Y/N):" << BOLDGREEN;
     std::cout << RESET;
 
     if (!Utils::isOKSelect()) return;
 
+    new_message.push_back('\0');
     sendToServer(new_message.c_str(), new_message.size(), OperationCode::COMMON_CHAT_ADD_MESSAGE);  // in result now OK or ERROR
 }
 
