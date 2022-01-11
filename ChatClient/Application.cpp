@@ -301,20 +301,32 @@ auto Application::commonChat() -> int
                 auto result{sendToServer(" ", 1, OperationCode::COMMON_CHAT_GET_MESSAGES)};  // in result now ID or ERROR
 
                 auto messages_num{-1};
+                auto column_num{-1};
                 getFromBuffer(result, 0, messages_num);
+                getFromBuffer(result, sizeof(int), column_num);
+
                 std::cout << "Messages number: " << messages_num << std::endl;
 
-                // std::cout << std::endl;
-                // std::string result = "-1" + DELIMITER + "-1";                      // -1 common chat users id
-                // sendToServer(result, OperationCode::GET_NUMBER_MESSAGES_IN_CHAT);  // in result now number of new messages
-                // if (result == RETURN_ERROR) break;
-                // auto message_num{std::stoi(result)};
-                // for (auto i{0}; i < message_num; ++i)
-                //{
-                //    result = std::to_string(i);
-                //    sendToServer(result, OperationCode::COMMON_CHAT_GET_MESSAGE);  // in result now OK or ERROR
-                //    std::cout << result;
-                //}
+                std::vector<std::string> message{};
+
+                auto data_ptr{result + 2 * sizeof(int)};
+                for (auto msg_index{0}; msg_index < messages_num; ++msg_index)
+                {
+                    message.clear();
+                    for (auto str_index{0}; str_index < column_num; ++str_index)
+                    {
+                        auto length{strlen(data_ptr)};
+                        message.push_back(data_ptr);
+                        data_ptr += length + 1;
+                    }
+                    printMessage(message);
+                    if (!((msg_index + 1) % MESSAGES_ON_PAGE))
+                    {
+                        std::cout << std::endl << RESET << YELLOW << "Press Enter for continue...";
+                        std::cin.get();  // Suspend via MESSAGES_ON_PAGE messages
+                    }
+
+                }
                 break;
             }
             case 2: commonChat_addMessage(); break;
@@ -619,6 +631,31 @@ auto Application::menu(std::string* string_arr, int size) const -> int
     std::cout << RESET;
 
     return menu_item;
+}
+
+auto Application::printMessage(std::vector<std::string>& message) const -> void
+{
+    std::cout << BOLDCYAN << std::setw(120) << std::setfill('-') << "-" << std::endl;
+    std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << message[0] << "."
+              << RESET;  // array's indices begin from 0, Output indices begin from 1
+    std::cout << YELLOW << "  Created: ";
+    std::cout << BOLDYELLOW /*<< std::setw(MAX_INPUT_SIZE) << std::setfill(' ') << std::left */ << message[1] << " " << message[2]
+              << " "
+              << "(ID: " << message[3] << ")";
+    std::cout << std::setw(20) << std::setfill(' ') << RESET << YELLOW;
+
+    std::cout << message[5] << std::endl;
+
+    std::cout << CYAN << std::setw(120) << std::setfill('-') << "-" << std::endl;
+    std::cout << BOLDYELLOW << message[4] << RESET << std::endl;
+
+    if (message[6] == "1")
+    {
+        std::cout << CYAN << std::setw(120) << std::setfill('-') << "-" << std::endl;
+        std::cout << YELLOW << "    Edited: ";
+        std::cout << message[7] << std::endl;
+    }
+    std::cout << BOLDCYAN << std::setw(120) << std::setfill('-') << "-" << RESET << std::endl;
 }
 
 auto Application::sendToServer(const char* message, size_t message_length, OperationCode operation_code) -> const char*

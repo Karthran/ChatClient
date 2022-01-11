@@ -83,4 +83,5 @@ private:
 
     /* string_arr{0] is Menu Name , printed with underline and without number*/
     auto menu(std::string* string_arr, int size) const -> int;
+    auto printMessage(std::vector<std::string> &message) const -> void;
 };
