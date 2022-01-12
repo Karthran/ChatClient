@@ -302,41 +302,17 @@ auto Application::commonChat() -> int
 
                 auto old_messages_num{-1};
                 auto old_column_num{-1};
-                getFromBuffer(result, 0, old_messages_num);
-                getFromBuffer(result, sizeof(int), old_column_num);
+                auto new_messages_num{-1};
+                auto new_column_num{-1};
+                getFromBuffer(result, sizeof(int), old_messages_num); //first int OperationCode::COMMON_CHAT_GET_MESSAGES
+                getFromBuffer(result, 2 * sizeof(int), old_column_num);
+                getFromBuffer(result, 3 * sizeof(int), new_messages_num);
+                getFromBuffer(result, 4 * sizeof(int), new_column_num);
 
-                std::cout << "Old Messages number: " << old_messages_num << std::endl;
-
-                auto data_ptr{result + 2 * sizeof(int)};
-
+                auto data_ptr{result + 5 * sizeof(int)};
                 printMessages(data_ptr, old_messages_num, old_column_num);
+                printMessages(data_ptr, new_messages_num, new_column_num, true);
 
-                //auto messages_num{-1};
-                //auto column_num{-1};
-                //getFromBuffer(result, 0, messages_num);
-                //getFromBuffer(result, sizeof(int), column_num);
-
-                //std::cout << "Messages number: " << messages_num << std::endl;
-
-                //std::vector<std::string> message{};
-
-                //auto data_ptr{result + 2 * sizeof(int)};
-                //for (auto msg_index{0}; msg_index < messages_num; ++msg_index)
-                //{
-                //    message.clear();
-                //    for (auto str_index{0}; str_index < column_num; ++str_index)
-                //    {
-                //        auto length{strlen(data_ptr)};
-                //        message.push_back(data_ptr);
-                //        data_ptr += length + 1;
-                //    }
-                //    printMessage(message);
-                //    if (!((msg_index + 1) % MESSAGES_ON_PAGE))
-                //    {
-                //        std::cout << std::endl << RESET << YELLOW << "Press Enter for continue...";
-                //        std::cin.get();  // Suspend via MESSAGES_ON_PAGE messages
-                //    }
-                //}
                 break;
             }
             case 2: commonChat_addMessage(); break;
@@ -675,7 +651,10 @@ auto Application::printMessage(const std::vector<std::string>& message, bool is_
               << "(ID: " << message[3] << ")";
     std::cout << std::setw(20) << std::setfill(' ') << RESET << YELLOW;
 
-    std::cout << message[5] << std::endl;
+    std::cout << message[5]; //    << std::endl;
+
+     if (is_new) std::cout << "       " << BOLDRED << "New" << RESET;
+    std::cout << std::endl;
 
     std::cout << CYAN << std::setw(120) << std::setfill('-') << "-" << std::endl;
     std::cout << BOLDYELLOW << message[4] << RESET << std::endl;
