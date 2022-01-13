@@ -2,7 +2,7 @@
 #include <string>
 #include <memory>
 
-const int DEFAULT_BUFLEN = 1024;
+const int DEFAULT_BUFLEN = 16384;
 
 class Client
 {

@@ -45,7 +45,7 @@ auto Application::run() -> void
 
     std::cout << std::endl << BOLDYELLOW << UNDER_LINE << "Wellcome to Console Chat!" << RESET << std::endl;
 
-    _user_id.push_back('\0');
+  //  _user_id.push_back('\0');
 
     auto isContinue{true};
     while (isContinue)
@@ -233,7 +233,7 @@ auto Application::signIn() -> void
         {
             auto res_length{strlen(result)};
             _user_id = result;
-            _user_id.push_back('\0');
+ //           _user_id.push_back('\0');
             selectCommonOrPrivate();
             return;
         }
@@ -261,8 +261,7 @@ auto Application::selectCommonOrPrivate() -> void
     auto isContinue{true};
     while (isContinue)
     {
-        std::string result = _user_id;
-        // sendToServer(result, OperationCode::NEW_MESSAGES);  // in result now number of new messages
+        auto result{sendToServer(" ", 1, OperationCode::NEW_MESSAGES_IN_COMMON_CHAT)};  
 
         std::string menu_arr[] = {"Select chat type:", "Common chat", "Private chat", "Sign Out"};
 
@@ -304,7 +303,7 @@ auto Application::commonChat() -> int
                 auto old_column_num{-1};
                 auto new_messages_num{-1};
                 auto new_column_num{-1};
-                getFromBuffer(result, sizeof(int), old_messages_num); //first int OperationCode::COMMON_CHAT_GET_MESSAGES
+                getFromBuffer(result, sizeof(int), old_messages_num);  // first int OperationCode::COMMON_CHAT_GET_MESSAGES
                 getFromBuffer(result, 2 * sizeof(int), old_column_num);
                 getFromBuffer(result, 3 * sizeof(int), new_messages_num);
                 getFromBuffer(result, 4 * sizeof(int), new_column_num);
@@ -316,8 +315,8 @@ auto Application::commonChat() -> int
                 break;
             }
             case 2: commonChat_addMessage(); break;
-            case 3: /*commonChat_editMessage(user);*/ break;
-            case 4: /*commonChat_deleteMessage(user);*/ break;
+            case 3: commonChat_editMessage(); break;
+            case 4: commonChat_deleteMessage(); break;
             default: isContinue = false; break;
         }
     }
@@ -340,21 +339,52 @@ auto Application::commonChat_addMessage() -> void
     sendToServer(new_message.c_str(), new_message.size(), OperationCode::COMMON_CHAT_ADD_MESSAGE);  // in result now OK or ERROR
 }
 
-// auto Application::commonChat_editMessage(const std::shared_ptr<User>& user) const -> void
-//{
-//    //std::cout << std::endl << YELLOW << "Select message number for editing: " << BOLDGREEN;
-//    //int message_number{Utils::inputIntegerValue()};
-//    //std::cout << RESET;
-//    //_common_chat->editMessage(user, message_number - 1);  // array's indices begin from 0, Output indices begin from 1
-//}
+auto Application::commonChat_editMessage() -> void
+{
+    std::cout << std::endl << YELLOW << "Select message number for editing: " << BOLDGREEN;
+    int message_number{Utils::inputIntegerValue()};
+    std::cout << RESET;
+    auto str_number{std::to_string(message_number)};
+    str_number.push_back('\0');
 
-// auto Application::commonChat_deleteMessage(const std::shared_ptr<User>& user) const -> void
-//{
-//    //std::cout << std::endl << YELLOW << "Select message number for deleting: " << BOLDGREEN;
-//    //int message_number{Utils::inputIntegerValue()};
-//    //std::cout << RESET;
-//    //_common_chat->deleteMessage(user, message_number - 1);  // array's indices begin from 0, Output indices begin from 1
-//}
+    auto result{sendToServer(str_number.c_str(), str_number.size(), OperationCode::COMMON_CHAT_CHECK_MESSAGE)};
+    auto messages_num{-1};
+    auto column_num{-1};
+    getFromBuffer(result, sizeof(int), messages_num);  // first int OperationCode::COMMON_CHAT_GET_MESSAGES
+    getFromBuffer(result, 2 * sizeof(int), column_num);
+    auto data_ptr{result + 3 * sizeof(int)};
+    if (!messages_num) return;
+    printMessages(data_ptr, messages_num, column_num);
+
+    std::string edited_message{};
+    editMessage(edited_message);
+    edited_message = str_number + edited_message;
+    edited_message.push_back('\0');
+    //auto result{sendToServer(edited_message.c_str(), edited_message.size(), OperationCode::COMMON_CHAT_EDIT_MESSAGE)};
+    sendToServer(edited_message.c_str(), edited_message.size(), OperationCode::COMMON_CHAT_EDIT_MESSAGE);
+}
+
+ auto Application::commonChat_deleteMessage() -> void
+{
+    std::cout << std::endl << YELLOW << "Select message number for deleting: " << BOLDGREEN;
+    int message_number{Utils::inputIntegerValue()};
+    std::cout << RESET;
+    auto str_number{std::to_string(message_number)};
+    str_number.push_back('\0');
+
+    auto result{sendToServer(str_number.c_str(), str_number.size(), OperationCode::COMMON_CHAT_CHECK_MESSAGE)};
+    auto messages_num{-1};
+    auto column_num{-1};
+    getFromBuffer(result, sizeof(int), messages_num);  // first int OperationCode::COMMON_CHAT_GET_MESSAGES
+    getFromBuffer(result, 2 * sizeof(int), column_num);
+    auto data_ptr{result + 3 * sizeof(int)};
+    if (!messages_num) return;
+    printMessages(data_ptr, messages_num, column_num);
+    std::cout << BOLDYELLOW << "Delete message?(Y/N):" << BOLDGREEN;
+    if (!Utils::isOKSelect()) return;
+    std::cout << RESET;
+    sendToServer(str_number.c_str(), str_number.size(), OperationCode::COMMON_CHAT_DELETE_MESSAGE);
+}
 
 // auto Application::privateMenu(const std::shared_ptr<User>& user) -> int
 //{
@@ -383,7 +413,7 @@ auto Application::commonChat_addMessage() -> void
 //    //}
 //    //return 0;
 //}
-
+//
 // auto Application::privateMenu_viewUsersNames() const -> void
 //{
 //    //std::cout << std::endl;
@@ -461,10 +491,10 @@ auto Application::commonChat_addMessage() -> void
 //    //        auto msg_vector{new_message->getMessages(userID)};
 //    //        auto msg_number{msg_vector.size()};
 //    //        std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << userID + 1 << "." << BOLDYELLOW
-//    //                  << std::setw(MAX_INPUT_SIZE) << std::setfill(' ') << std::left << _user_array[userID]->getUserName() << RESET <<
-//    GREEN
-//    //                  << "(" << msg_number << " new message(s))" << std::endl;  // array's indices begin from 0, Output indices begin
-//    from 1
+//    //                  << std::setw(MAX_INPUT_SIZE) << std::setfill(' ') << std::left << _user_array[userID]->getUserName() << RESET
+//    << GREEN
+//    //                  << "(" << msg_number << " new message(s))" << std::endl;  // array's indices begin from 0, Output indices
+//    begin from 1
 //    //    }
 //    //}
 //}
@@ -506,7 +536,7 @@ auto Application::commonChat_addMessage() -> void
 //    //}
 //    //return 0;
 //}
-
+//
 // auto Application::privateChat_addMessage(
 //    const std::shared_ptr<User>& source_user, const std::shared_ptr<User>& target_user, std::shared_ptr<Chat>& chat) -> void
 //{
@@ -538,32 +568,36 @@ auto Application::commonChat_addMessage() -> void
 //    //auto index{target_user->getUserID()};
 //    //_new_messages_array[index]->addNewMessage(message);
 //}
-
+//
 // auto Application::privateChat_editMessage(
-//    const std::shared_ptr<User>& source_user, const std::shared_ptr<User>& target_user, const std::shared_ptr<Chat>& chat) const -> void
+//    const std::shared_ptr<User>& source_user, const std::shared_ptr<User>& target_user, const std::shared_ptr<Chat>& chat) const ->
+//    void
 //{
 //    //std::cout << std::endl << RESET << YELLOW << "Select message number for editing: " << BOLDGREEN;
 //    //int message_number{Utils::inputIntegerValue()};
 //    //std::cout << RESET;
 //    //if (chat->isInitialized())
 //    //{
-//    //    auto message{chat->editMessage(source_user, message_number - 1)};  // array's indices begin from 0, Output indices begin from 1
+//    //    auto message{chat->editMessage(source_user, message_number - 1)};  // array's indices begin from 0, Output indices begin
+//    from 1
 //    //    if (!message->isInitialized()) return;
 //
 //    //    auto index{target_user->getUserID()};
 //    //    _new_messages_array[index]->addNewMessage(message);
 //    //}
 //}
-
+//
 // auto Application::privateChat_deleteMessage(
-//    const std::shared_ptr<User>& source_user, const std::shared_ptr<User>& target_user, const std::shared_ptr<Chat>& chat) const -> void
+//    const std::shared_ptr<User>& source_user, const std::shared_ptr<User>& target_user, const std::shared_ptr<Chat>& chat) const ->
+//    void
 //{
 //    //std::cout << std::endl << RESET << YELLOW << "Select message number for deleting: " << BOLDGREEN;
 //    //int message_number{Utils::inputIntegerValue()};
 //    //std::cout << RESET;
 //    //if (chat->isInitialized())
 //    //{
-//    //    auto message{chat->deleteMessage(source_user, message_number - 1)};  // array's indices begin from 0, Output indices begin from
+//    //    auto message{chat->deleteMessage(source_user, message_number - 1)};  // array's indices begin from 0, Output indices begin
+//    from
 //    1
 //    //    if (!message->isInitialized()) return;
 //
@@ -571,7 +605,7 @@ auto Application::commonChat_addMessage() -> void
 //    //    _new_messages_array[index]->removeNewMessage(message);
 //    //}
 //}
-
+//
 // auto Application::getPrivateChat(const std::shared_ptr<User>& source_user, const std::shared_ptr<User>& target_user) const
 //    -> const std::shared_ptr<Chat>
 //{
@@ -591,7 +625,7 @@ auto Application::commonChat_addMessage() -> void
 //
 //    //return std::make_shared<Chat>();
 //}
-
+//
 // auto Application::checkingForStringExistence(const std::string& string, const std::string& (User::*get)() const) const -> int
 //{
 //    //for (auto i{0}; i < _current_user_number; ++i)
@@ -631,7 +665,10 @@ auto Application::printMessages(const char*& data_ptr, int messages_num, int col
             auto length{strlen(data_ptr)};
             message.push_back(data_ptr);
             data_ptr += length + 1;
+            //std::cout << message[str_index] << " " ;
         }
+        //std::cout << std::endl;
+
         printMessage(message, is_new);
         if (!((msg_index + 1) % MESSAGES_ON_PAGE))
         {
@@ -651,9 +688,9 @@ auto Application::printMessage(const std::vector<std::string>& message, bool is_
               << "(ID: " << message[3] << ")";
     std::cout << std::setw(20) << std::setfill(' ') << RESET << YELLOW;
 
-    std::cout << message[5]; //    << std::endl;
+    std::cout << message[5];  //    << std::endl;
 
-     if (is_new) std::cout << "       " << BOLDRED << "New" << RESET;
+    if (is_new && message[3] != _user_id) std::cout << "       " << BOLDRED << "New" << RESET;
     std::cout << std::endl;
 
     std::cout << CYAN << std::setw(120) << std::setfill('-') << "-" << std::endl;
@@ -666,6 +703,17 @@ auto Application::printMessage(const std::vector<std::string>& message, bool is_
         std::cout << message[7] << std::endl;
     }
     std::cout << BOLDCYAN << std::setw(120) << std::setfill('-') << "-" << RESET << std::endl;
+}
+
+auto Application::editMessage(std::string& edited_message) -> void
+{
+    std::cout << YELLOW << "Input new message: " << BOLDGREEN;
+    Utils::getString(edited_message);
+    std::cout << RESET;
+
+    std::cout << BOLDYELLOW << "Save changes?(Y/N):" << BOLDGREEN;
+    if (!Utils::isOKSelect()) edited_message.clear();
+    std::cout << RESET;
 }
 
 auto Application::sendToServer(const char* message, size_t message_length, OperationCode operation_code) -> const char*

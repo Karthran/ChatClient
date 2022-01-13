@@ -54,8 +54,8 @@ private:
 
     auto commonChat() -> int;
     auto commonChat_addMessage() -> void;
-    //auto commonChat_editMessage(const std::shared_ptr<User>& user) const -> void;
-    //auto commonChat_deleteMessage(const std::shared_ptr<User>& user) const -> void;
+    auto commonChat_editMessage() -> void;
+    auto commonChat_deleteMessage() -> void;
 
     //auto privateMenu(const std::shared_ptr<User>& user) -> int;
     //auto privateMenu_viewUsersNames() const -> void;
@@ -85,4 +85,5 @@ private:
     auto menu(std::string* string_arr, int size) const -> int;
     auto printMessages(const char*& data_ptr, int messages_num, int columns_num, bool is_new = false) const -> void;
     auto printMessage(const std::vector<std::string>& message, bool is_new) const -> void;
+    auto editMessage(std::string& edited_message) -> void;
 };
