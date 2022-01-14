@@ -45,7 +45,7 @@ auto Application::run() -> void
 
     std::cout << std::endl << BOLDYELLOW << UNDER_LINE << "Wellcome to Console Chat!" << RESET << std::endl;
 
-  //  _user_id.push_back('\0');
+    //  _user_id.push_back('\0');
 
     auto isContinue{true};
     while (isContinue)
@@ -233,7 +233,7 @@ auto Application::signIn() -> void
         {
             auto res_length{strlen(result)};
             _user_id = result;
- //           _user_id.push_back('\0');
+            //           _user_id.push_back('\0');
             selectCommonOrPrivate();
             return;
         }
@@ -261,9 +261,29 @@ auto Application::selectCommonOrPrivate() -> void
     auto isContinue{true};
     while (isContinue)
     {
-        auto result{sendToServer(" ", 1, OperationCode::NEW_MESSAGES_IN_COMMON_CHAT)};  
-
         std::string menu_arr[] = {"Select chat type:", "Common chat", "Private chat", "Sign Out"};
+
+        auto result{sendToServer(" ", 1, OperationCode::NEW_MESSAGES_IN_COMMON_CHAT)};
+
+        auto row_num{-1};
+        auto column_num{-1};
+        getFromBuffer(result, sizeof(int), row_num);
+        getFromBuffer(result, 2 * sizeof(int), column_num);
+        auto data_ptr{result + 3 * sizeof(int)};
+        if (row_num)
+        {
+            auto sum_msg{0};
+            for (auto i{0}; i < row_num; ++i)
+            {
+                auto length{strlen(data_ptr)};
+                data_ptr += length + 1;
+                sum_msg += std::stoi(data_ptr);
+                length = strlen(data_ptr);
+                data_ptr += length + 1;
+            }
+            menu_arr[1] = BOLDYELLOW + menu_arr[1] + RESET + GREEN + "(" + std::to_string(sum_msg) + " new message(s) from " +
+                          std::to_string(row_num) + " user(s))" + RESET;  // menu_arr[1] = "Common chat"
+        }
 
         // auto user_number{std::stoi(result)};
         // if (user_number)  // if exist new message for this user
@@ -360,11 +380,11 @@ auto Application::commonChat_editMessage() -> void
     editMessage(edited_message);
     edited_message = str_number + edited_message;
     edited_message.push_back('\0');
-    //auto result{sendToServer(edited_message.c_str(), edited_message.size(), OperationCode::COMMON_CHAT_EDIT_MESSAGE)};
+    // auto result{sendToServer(edited_message.c_str(), edited_message.size(), OperationCode::COMMON_CHAT_EDIT_MESSAGE)};
     sendToServer(edited_message.c_str(), edited_message.size(), OperationCode::COMMON_CHAT_EDIT_MESSAGE);
 }
 
- auto Application::commonChat_deleteMessage() -> void
+auto Application::commonChat_deleteMessage() -> void
 {
     std::cout << std::endl << YELLOW << "Select message number for deleting: " << BOLDGREEN;
     int message_number{Utils::inputIntegerValue()};
@@ -665,9 +685,9 @@ auto Application::printMessages(const char*& data_ptr, int messages_num, int col
             auto length{strlen(data_ptr)};
             message.push_back(data_ptr);
             data_ptr += length + 1;
-            //std::cout << message[str_index] << " " ;
+            // std::cout << message[str_index] << " " ;
         }
-        //std::cout << std::endl;
+        // std::cout << std::endl;
 
         printMessage(message, is_new);
         if (!((msg_index + 1) % MESSAGES_ON_PAGE))
@@ -681,8 +701,7 @@ auto Application::printMessages(const char*& data_ptr, int messages_num, int col
 auto Application::printMessage(const std::vector<std::string>& message, bool is_new) const -> void
 {
     std::cout << BOLDCYAN << std::setw(120) << std::setfill('-') << "-" << std::endl;
-    std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << message[0] << "."
-              << RESET;  // array's indices begin from 0, Output indices begin from 1
+    std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << message[0] << "." << RESET;
     std::cout << YELLOW << "  Created: ";
     std::cout << BOLDYELLOW /*<< std::setw(MAX_INPUT_SIZE) << std::setfill(' ') << std::left */ << message[1] << " " << message[2] << " "
               << "(ID: " << message[3] << ")";
