@@ -584,34 +584,20 @@ auto Application::privateMenu_selectByID() -> void
 
  auto Application::privateChat_addMessage() -> void
 {
-    //if (!chat->isInitialized())
-    //{
-    //    chat = std::make_shared<Chat>();
-    //    long long first_userID{source_user->getUserID()};
-    //    long long second_userID{target_user->getUserID()};
-    //    auto isSwap(Utils::minToMaxOrder(first_userID, second_userID));
+     std::string new_message{};
 
-    //    long long mapKey{(static_cast<long long>(first_userID) << 32) + second_userID};  // Create value for key value
+     std::cout << std::endl << YELLOW << "Input message: " << BOLDGREEN;
+     Utils::getString(new_message);
+     std::cout << RESET;
+     std::cout << BOLDYELLOW << "Send message?(Y/N):" << BOLDGREEN;
+     std::cout << RESET;
 
-    //    if (isSwap)
-    //    {
-    //        chat->setFirstUser(target_user);
-    //        chat->setSecondUser(source_user);
-    //    }
-    //    else
-    //    {
-    //        chat->setFirstUser(source_user);
-    //        chat->setSecondUser(target_user);
-    //    }
-    //    _private_chat_array[mapKey] = chat;
-    //    ++_current_chat_number;
-    //    chat->setInitialized(true);
-    //}
-    //auto message{chat->addMessage(source_user)};
-    //if (!message->isInitialized()) return;
-    //auto index{target_user->getUserID()};
-    //_new_messages_array[index]->addNewMessage(message);
-}
+     if (!Utils::isOKSelect()) return;
+     new_message.push_back('\0');
+     new_message += _private_chat_id;
+     new_message.push_back('\0');
+     sendToServer(new_message.c_str(), new_message.size(), OperationCode::PRIVATE_CHAT_ADD_MESSAGE);  
+ }
 
 // auto Application::privateChat_editMessage(
 //    const std::shared_ptr<User>& source_user, const std::shared_ptr<User>& target_user, const std::shared_ptr<Chat>& chat) const ->
