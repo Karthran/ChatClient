@@ -166,7 +166,7 @@ auto Client::client_thread() -> int
     closesocket(ConnectSocket);
     WSACleanup();
 
-    _exchange_buffer = nullptr;  ////////////////////////////////////////////////////////////////////////////
+ //   _exchange_buffer = nullptr;  ////////////////////////////////////////////////////////////////////////////
     return 0;
 }
 
@@ -237,7 +237,7 @@ auto Client::client_thread() -> int
     }
 
     close(connection);
-    _exchange_buffer = nullptr;
+//    _exchange_buffer = nullptr;
 
     return 0;
 }

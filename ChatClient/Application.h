@@ -57,8 +57,9 @@ private:
     auto commonChat_editMessage() -> void;
     auto commonChat_deleteMessage() -> void;
 
-    //auto privateMenu(const std::shared_ptr<User>& user) -> int;
-    //auto privateMenu_viewUsersNames() const -> void;
+    auto privateMenu() -> void;
+    auto privateMenu_viewUsersNames() -> void;
+    auto privateMenu_viewUsersExistsChat() -> void;
     //auto privateMenu_selectByName(const std::shared_ptr<User>& user) const -> int;
     //auto privateMenu_selectByID(const std::shared_ptr<User>& user) -> void;
     //auto printNewMessagesUsers(const std::shared_ptr<User>& user) -> void;

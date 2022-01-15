@@ -297,7 +297,7 @@ auto Application::selectCommonOrPrivate() -> void
         switch (menu_item)
         {
             case 1: commonChat(); break;
-            case 2: /* privateMenu();*/ break;
+            case 2: privateMenu(); break;
             default: isContinue = false; break;
         }
     }
@@ -317,7 +317,7 @@ auto Application::commonChat() -> int
         {
             case 1:
             {
-                auto result{sendToServer(" ", 1, OperationCode::COMMON_CHAT_GET_MESSAGES)};  // in result now ID or ERROR
+                auto result{sendToServer(" ", 1, OperationCode::COMMON_CHAT_GET_MESSAGES)};
 
                 auto old_messages_num{-1};
                 auto old_column_num{-1};
@@ -370,7 +370,7 @@ auto Application::commonChat_editMessage() -> void
     auto result{sendToServer(str_number.c_str(), str_number.size(), OperationCode::COMMON_CHAT_CHECK_MESSAGE)};
     auto messages_num{-1};
     auto column_num{-1};
-    getFromBuffer(result, sizeof(int), messages_num);  // first int OperationCode::COMMON_CHAT_GET_MESSAGES
+    getFromBuffer(result, sizeof(int), messages_num);  // first int OperationCode::COMMON_CHAT_CHECK_MESSAGE
     getFromBuffer(result, 2 * sizeof(int), column_num);
     auto data_ptr{result + 3 * sizeof(int)};
     if (!messages_num) return;
@@ -406,55 +406,101 @@ auto Application::commonChat_deleteMessage() -> void
     sendToServer(str_number.c_str(), str_number.size(), OperationCode::COMMON_CHAT_DELETE_MESSAGE);
 }
 
-// auto Application::privateMenu(const std::shared_ptr<User>& user) -> int
-//{
-//    //auto isContinue{true};
-//    //while (isContinue)
-//    //{
-//    //    printNewMessagesUsers(user);
-//
-//    //    std::string menu_arr[]{"Private Chat:", "View chat users names", "Select target user by name", "Select target user by ID",
-//    "Exit"};
-//
-//    //    auto menu_item{menu(menu_arr, 5)};
-//
-//    //    switch (menu_item)
-//    //    {
-//    //        case 1: privateMenu_viewUsersNames(); break;
-//    //        case 2:
-//    //        {
-//    //            auto index{0};
-//    //            if ((index = privateMenu_selectByName(user)) != UNSUCCESSFUL) privateChat(user, _user_array[index]);
-//    //        }
-//    //        break;
-//    //        case 3: privateMenu_selectByID(user); break;
-//    //        default: isContinue = false; break;
-//    //    }
-//    //}
-//    //return 0;
-//}
-//
-// auto Application::privateMenu_viewUsersNames() const -> void
-//{
-//    //std::cout << std::endl;
-//    //std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << "ID"
-//    //          << "." << BOLDYELLOW << std::setw(MAX_INPUT_SIZE) << std::setfill(' ') << std::left << "User Name" << std::endl;
-//
-//    //for (auto i{0}; i < _current_user_number; ++i)
-//    //{
-//    //    std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << i + 1 << "." << BOLDYELLOW <<
-//    std::setw(MAX_INPUT_SIZE)
-//    //              << std::setfill(' ') << std::left << _user_array[i]->getUserName()
-//    //              << std::endl;  // array's indices begin from 0, Output indices begin from 1
-//    //    if (!((i + 1) % LINE_TO_PAGE))
-//    //    {
-//    //        std::cout << std::endl << RESET << YELLOW << "Press Enter for continue...";
-//    //        std::cin.get();  //  Suspend via LINE_TO_PAGE lines
-//    //    }
-//    //}
-//    //std::cout << RESET;
-//}
-//
+auto Application::privateMenu() -> void
+{
+    auto isContinue{true};
+    while (isContinue)
+    {
+        // printNewMessagesUsers(user);
+
+        std::string menu_arr[]{"Private Chat:", "View chat users names", "Select target user by name", "Select target user by ID", "Exit"};
+
+        auto menu_item{menu(menu_arr, 5)};
+
+        switch (menu_item)
+        {
+            case 1: privateMenu_viewUsersNames(); break;
+            case 2: privateMenu_viewUsersExistsChat(); break;
+            case 3: /*privateMenu_selectByID(user);*/ break;
+            default: isContinue = false; break;
+        }
+    }
+}
+
+auto Application::privateMenu_viewUsersNames() -> void
+{
+    auto result{sendToServer(" ", 1, OperationCode::VIEW_USERS_ID_NAME_SURNAME)};
+    auto messages_num{-1};
+    auto columns_num{-1};
+    getFromBuffer(result, sizeof(int), messages_num);  // first int OperationCode::VIEW_USERS_ID_NAME_SURNAME
+    getFromBuffer(result, 2 * sizeof(int), columns_num);
+    auto data_ptr{result + 3 * sizeof(int)};
+    if (!messages_num) return;
+
+    std::vector<std::string> message{};
+
+    std::cout << std::endl;
+    std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << "ID"
+              << "." << BOLDYELLOW << /*std::setw(MAX_INPUT_SIZE) << std::setfill(' ') << std::left <<*/ "User Name" << std::endl;
+
+    for (auto msg_index{0}; msg_index < messages_num; ++msg_index)
+    {
+        message.clear();
+        for (auto str_index{0}; str_index < columns_num; ++str_index)
+        {
+            auto length{strlen(data_ptr)};
+            message.push_back(data_ptr);
+            data_ptr += length + 1;
+        }
+        std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << message[0] << "." << BOLDYELLOW
+                  << /*std::setw(MAX_INPUT_SIZE) << std::setfill(' ') << std::left <<*/ message[1] << " " << message[2] << std::endl;
+
+        if (!((msg_index + 1) % LINE_TO_PAGE))
+        {
+            std::cout << std::endl << RESET << YELLOW << "Press Enter for continue...";
+            std::cin.get();  //  Suspend via LINE_TO_PAGE lines
+        }
+    }
+    std::cout << RESET;
+}
+
+auto Application::privateMenu_viewUsersExistsChat() -> void
+{
+    auto result{sendToServer(" ", 1, OperationCode::VIEW_USERS_ID_NAME_SURNAME)};
+    auto messages_num{-1};
+    auto columns_num{-1};
+    getFromBuffer(result, sizeof(int), messages_num);  // first int OperationCode::VIEW_USERS_ID_NAME_SURNAME
+    getFromBuffer(result, 2 * sizeof(int), columns_num);
+    auto data_ptr{result + 3 * sizeof(int)};
+    if (!messages_num) return;
+
+    std::vector<std::string> message{};
+
+    std::cout << std::endl;
+    std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << "ID"
+              << "." << BOLDYELLOW << /*std::setw(MAX_INPUT_SIZE) << std::setfill(' ') << std::left <<*/ "User Name" << std::endl;
+
+    for (auto msg_index{0}; msg_index < messages_num; ++msg_index)
+    {
+        message.clear();
+        for (auto str_index{0}; str_index < columns_num; ++str_index)
+        {
+            auto length{strlen(data_ptr)};
+            message.push_back(data_ptr);
+            data_ptr += length + 1;
+        }
+        std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << message[0] << "." << BOLDYELLOW
+                  << /*std::setw(MAX_INPUT_SIZE) << std::setfill(' ') << std::left <<*/ message[1] << " " << message[2] << std::endl;
+
+        if (!((msg_index + 1) % LINE_TO_PAGE))
+        {
+            std::cout << std::endl << RESET << YELLOW << "Press Enter for continue...";
+            std::cin.get();  //  Suspend via LINE_TO_PAGE lines
+        }
+    }
+    std::cout << RESET;
+}
+
 // auto Application::privateMenu_selectByName(const std::shared_ptr<User>& user) const -> int
 //{
 //    //auto index{UNSUCCESSFUL};
