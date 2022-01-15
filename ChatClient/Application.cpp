@@ -231,9 +231,7 @@ auto Application::signIn() -> void
 
         if (strcmp(result, RETURN_ERROR.c_str()))
         {
-            auto res_length{strlen(result)};
             _user_id = result;
-            //           _user_id.push_back('\0');
             selectCommonOrPrivate();
             return;
         }
@@ -421,7 +419,7 @@ auto Application::privateMenu() -> void
         {
             case 1: privateMenu_viewUsersNames(); break;
             case 2: privateMenu_viewUsersExistsChat(); break;
-            case 3: /*privateMenu_selectByID(user);*/ break;
+            case 3: privateMenu_selectByID(); break;
             default: isContinue = false; break;
         }
     }
@@ -501,44 +499,26 @@ auto Application::privateMenu_viewUsersExistsChat() -> void
     std::cout << RESET;
 }
 
-// auto Application::privateMenu_selectByName(const std::shared_ptr<User>& user) const -> int
-//{
-//    //auto index{UNSUCCESSFUL};
-//    //auto isOK{false};
-//    //while (!isOK)
-//    //{
-//    //    std::cout << std::endl << RESET << YELLOW << "Input target user name: " << BOLDYELLOW;
-//    //    std::string user_name;
-//    //    std::cin >> user_name;
-//    //    std::cout << RESET;
-//    //    const std::string& (User::*get_name)() const = &User::getUserName;
-//    //    if ((index = checkingForStringExistence(user_name, get_name)) == UNSUCCESSFUL)
-//    //    {
-//    //        std::cout << RED << "User don't exist!" << std::endl;
-//    //        std::cout << std::endl << BOLDYELLOW << "Try again?(Y/N):" << BOLDGREEN;
-//    //        if (!Utils::isOKSelect()) return UNSUCCESSFUL;
-//    //        continue;
-//    //    }
-//    //    isOK = true;
-//    //}
-//    //return index;
-//}
-//
-// auto Application::privateMenu_selectByID(const std::shared_ptr<User>& user) -> void
-//{
-//    //std::cout << std::endl << RESET << YELLOW << "Input target user ID: " << BOLDGREEN;
-//    //auto index{Utils::inputIntegerValue()};
-//    //std::cout << RESET;
-//    //try
-//    //{
-//    //    privateChat(user, _user_array.at(index - 1));  // array's indices begin from 0, Output indices begin from 1
-//    //}
-//    //catch (std::exception& e)
-//    //{
-//    //    std::cout << BOLDRED << "Exception: " << e.what() << RESET << std::endl;
-//    //}
-//}
-//
+auto Application::privateMenu_selectByID() -> void
+{
+    std::cout << std::endl << RESET << YELLOW << "Input target user ID: " << BOLDGREEN;
+    auto message_number{Utils::inputIntegerValue()};
+    std::cout << RESET;
+
+    auto str_number{std::to_string(message_number)};
+    str_number.push_back('\0');
+
+    auto result{sendToServer(str_number.c_str(), str_number.size(), OperationCode::GET_PRIVATE_CHAT_ID)};
+    auto messages_num{-1};
+    auto column_num{-1};
+    getFromBuffer(result, sizeof(int), messages_num);  // first int OperationCode::GET_PRIVATE_CHAT_ID
+    getFromBuffer(result, 2 * sizeof(int), column_num);
+    auto data_ptr{result + 3 * sizeof(int)};
+    if (!messages_num) return;
+    _private_chat_id = data_ptr;
+    privateChat();
+}
+
 // auto Application::printNewMessagesUsers(const std::shared_ptr<User>& user) -> void
 //{
 //    //auto new_message{_new_messages_array[user->getUserID()]};
@@ -564,77 +544,75 @@ auto Application::privateMenu_viewUsersExistsChat() -> void
 //    //    }
 //    //}
 //}
-//
-// auto Application::privateChat(const std::shared_ptr<User>& source_user, const std::shared_ptr<User>& target_user) -> int
-//{
-//    //auto isContinue{true};
-//
-//    //auto currentChat{getPrivateChat(source_user, target_user)};
-//
-//    //while (isContinue)
-//    //{
-//    //    std::string menu_arr[]{"Private Chat:", "View chat", "Add message", "Edit message", "Delete message", "Exit"};
-//
-//    //    auto menu_item{menu(menu_arr, 6)};
-//
-//    //    switch (menu_item)
-//    //    {
-//    //        case 1:
-//    //            if (currentChat.get()->isInitialized())
-//    //            {
-//    //                std::cout << std::endl;
-//    //                currentChat->printMessages(0, currentChat->getCurrentMessageNum());
-//
-//    //                auto new_message{_new_messages_array[source_user->getUserID()]};
-//    //                auto msg_vector{new_message->getMessages(target_user->getUserID())};
-//    //                auto msg_number{msg_vector.size()};
-//    //                if (msg_number)
-//    //                {
-//    //                    new_message->removeAllMessages(target_user->getUserID());
-//    //                }
-//    //            }
-//    //            break;
-//    //        case 2: privateChat_addMessage(source_user, target_user, currentChat); break;
-//    //        case 3: privateChat_editMessage(source_user, target_user, currentChat); break;
-//    //        case 4: privateChat_deleteMessage(source_user, target_user, currentChat); break;
-//    //        default: isContinue = false; break;
-//    //    }
-//    //}
-//    //return 0;
-//}
-//
-// auto Application::privateChat_addMessage(
-//    const std::shared_ptr<User>& source_user, const std::shared_ptr<User>& target_user, std::shared_ptr<Chat>& chat) -> void
-//{
-//    //if (!chat->isInitialized())
-//    //{
-//    //    chat = std::make_shared<Chat>();
-//    //    long long first_userID{source_user->getUserID()};
-//    //    long long second_userID{target_user->getUserID()};
-//    //    auto isSwap(Utils::minToMaxOrder(first_userID, second_userID));
-//
-//    //    long long mapKey{(static_cast<long long>(first_userID) << 32) + second_userID};  // Create value for key value
-//
-//    //    if (isSwap)
-//    //    {
-//    //        chat->setFirstUser(target_user);
-//    //        chat->setSecondUser(source_user);
-//    //    }
-//    //    else
-//    //    {
-//    //        chat->setFirstUser(source_user);
-//    //        chat->setSecondUser(target_user);
-//    //    }
-//    //    _private_chat_array[mapKey] = chat;
-//    //    ++_current_chat_number;
-//    //    chat->setInitialized(true);
-//    //}
-//    //auto message{chat->addMessage(source_user)};
-//    //if (!message->isInitialized()) return;
-//    //auto index{target_user->getUserID()};
-//    //_new_messages_array[index]->addNewMessage(message);
-//}
-//
+
+ auto Application::privateChat() -> void
+{
+    auto isContinue{true};
+
+    //auto currentChat{getPrivateChat(source_user, target_user)};
+
+    while (isContinue)
+    {
+        std::string menu_arr[]{"Private Chat:", "View chat", "Add message", "Edit message", "Delete message", "Exit"};
+
+        auto menu_item{menu(menu_arr, 6)};
+
+        switch (menu_item)
+        {
+            case 1:
+                //if (currentChat.get()->isInitialized())
+                //{
+                //    std::cout << std::endl;
+                //    currentChat->printMessages(0, currentChat->getCurrentMessageNum());
+
+                //    auto new_message{_new_messages_array[source_user->getUserID()]};
+                //    auto msg_vector{new_message->getMessages(target_user->getUserID())};
+                //    auto msg_number{msg_vector.size()};
+                //    if (msg_number)
+                //    {
+                //        new_message->removeAllMessages(target_user->getUserID());
+                //    }
+                //}
+                break;
+            case 2: privateChat_addMessage(); break;
+            case 3:/* privateChat_editMessage();*/ break;
+            case 4:/* privateChat_deleteMessage();*/ break;
+            default: isContinue = false; break;
+        }
+    }
+}
+
+ auto Application::privateChat_addMessage() -> void
+{
+    //if (!chat->isInitialized())
+    //{
+    //    chat = std::make_shared<Chat>();
+    //    long long first_userID{source_user->getUserID()};
+    //    long long second_userID{target_user->getUserID()};
+    //    auto isSwap(Utils::minToMaxOrder(first_userID, second_userID));
+
+    //    long long mapKey{(static_cast<long long>(first_userID) << 32) + second_userID};  // Create value for key value
+
+    //    if (isSwap)
+    //    {
+    //        chat->setFirstUser(target_user);
+    //        chat->setSecondUser(source_user);
+    //    }
+    //    else
+    //    {
+    //        chat->setFirstUser(source_user);
+    //        chat->setSecondUser(target_user);
+    //    }
+    //    _private_chat_array[mapKey] = chat;
+    //    ++_current_chat_number;
+    //    chat->setInitialized(true);
+    //}
+    //auto message{chat->addMessage(source_user)};
+    //if (!message->isInitialized()) return;
+    //auto index{target_user->getUserID()};
+    //_new_messages_array[index]->addNewMessage(message);
+}
+
 // auto Application::privateChat_editMessage(
 //    const std::shared_ptr<User>& source_user, const std::shared_ptr<User>& target_user, const std::shared_ptr<Chat>& chat) const ->
 //    void
@@ -792,40 +770,24 @@ auto Application::sendToServer(const char* message, size_t message_length, Opera
     }
 
     _client->setBufferSize(message_length + HEADER_SIZE);
-
     _current_msg_length = 0;
-
     addToBuffer(_msg_buffer, _current_msg_length, static_cast<int>(OperationCode::CHECK_SIZE));
     addToBuffer(_msg_buffer, _current_msg_length, message_length);
-
     auto receive_buf{talkToServer(_msg_buffer, _current_msg_length)};
 
     _current_msg_length = 0;
-
     addToBuffer(_msg_buffer, _current_msg_length, static_cast<int>(operation_code));
     addToBuffer(_msg_buffer, _current_msg_length, static_cast<int>(OperationCode::CHECK_SIZE));
     addToBuffer(_msg_buffer, _current_msg_length, message, message_length);
-
     receive_buf = talkToServer(_msg_buffer, _current_msg_length);
 
     auto message_size{-1};
     getFromBuffer(receive_buf, sizeof(int), message_size);
-    //   std::cout << "Message Size: " << message_size << std::endl;
-
-    //    getFromBuffer(receive_buf, sizeof(int), message_size);
-    //    std::cout << "First: " << message_size << std::endl;
-
     _client->setBufferSize(message_size + HEADER_SIZE);
-
     _current_msg_length = 0;
-
     addToBuffer(_msg_buffer, _current_msg_length, static_cast<int>(operation_code));
     addToBuffer(_msg_buffer, _current_msg_length, static_cast<int>(OperationCode::READY));
-
     receive_buf = talkToServer(_msg_buffer, _current_msg_length);
-
-    // std::cout << "READY" << std::endl;
-
     receive_buf[message_size] = '\0';
 
     return receive_buf;

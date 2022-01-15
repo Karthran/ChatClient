@@ -30,6 +30,7 @@ private:
 
     std::string _self_path{};
     std::string _user_id{"0"};
+    std::string _private_chat_id{"0"};
 
     auto talkToServer(const char* message, size_t msg_length) const -> char*;
 
@@ -60,14 +61,12 @@ private:
     auto privateMenu() -> void;
     auto privateMenu_viewUsersNames() -> void;
     auto privateMenu_viewUsersExistsChat() -> void;
-    //auto privateMenu_selectByName(const std::shared_ptr<User>& user) const -> int;
-    //auto privateMenu_selectByID(const std::shared_ptr<User>& user) -> void;
+    auto privateMenu_selectByID() -> void;
     //auto printNewMessagesUsers(const std::shared_ptr<User>& user) -> void;
 
-    //auto privateChat(const std::shared_ptr<User>& source_user, const std::shared_ptr<User>& target_user) -> int;
+    auto privateChat() -> void;
 
-    //auto privateChat_addMessage(
-    //    const std::shared_ptr<User>& source_user, const std::shared_ptr<User>& target_user, std::shared_ptr<Chat>& chat) -> void;
+    auto privateChat_addMessage() -> void;
 
     //auto privateChat_editMessage(const std::shared_ptr<User>& source_user, const std::shared_ptr<User>& target_user,
     //    const std::shared_ptr<Chat>& chat) const -> void;
