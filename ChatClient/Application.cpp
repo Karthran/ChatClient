@@ -283,12 +283,27 @@ auto Application::selectCommonOrPrivate() -> void
                           std::to_string(row_num) + " user(s))" + RESET;  // menu_arr[1] = "Common chat"
         }
 
-        // auto user_number{std::stoi(result)};
-        // if (user_number)  // if exist new message for this user
-        //{
-        //    menu_arr[2] = BOLDYELLOW + menu_arr[2] + RESET + GREEN + "(New message(s) from " + std::to_string(user_number) + " user(s))" +
-        //                  RESET;  // menu_arr[2] = "Private chat"
-        //}
+        auto res{sendToServer(" ", 1, OperationCode::NEW_MESSAGES_IN_PRIVATE_CHAT)};
+
+        row_num = -1;
+        column_num = -1;
+        getFromBuffer(res, sizeof(int), row_num);
+        getFromBuffer(res, 2 * sizeof(int), column_num);
+        data_ptr = res + 3 * sizeof(int);
+        if (row_num)
+        {
+            auto sum_msg{0};
+            for (auto i{0}; i < row_num; ++i)
+            {
+                auto length{strlen(data_ptr)};
+                data_ptr += length + 1;
+                sum_msg += std::stoi(data_ptr);
+                length = strlen(data_ptr);
+                data_ptr += length + 1;
+            }
+            menu_arr[2] = BOLDYELLOW + menu_arr[2] + RESET + GREEN + "(" + std::to_string(sum_msg) + " new message(s) from " +
+                          std::to_string(row_num) + " user(s))" + RESET;  // menu_arr[2] = "Private chat"
+        }
 
         auto menu_item{menu(menu_arr, 4)};
 
@@ -545,11 +560,9 @@ auto Application::privateMenu_selectByID() -> void
 //    //}
 //}
 
- auto Application::privateChat() -> void
+auto Application::privateChat() -> void
 {
     auto isContinue{true};
-
-    //auto currentChat{getPrivateChat(source_user, target_user)};
 
     while (isContinue)
     {
@@ -560,44 +573,49 @@ auto Application::privateMenu_selectByID() -> void
         switch (menu_item)
         {
             case 1:
-                //if (currentChat.get()->isInitialized())
-                //{
-                //    std::cout << std::endl;
-                //    currentChat->printMessages(0, currentChat->getCurrentMessageNum());
+            {
+                std::string chat_id = _private_chat_id;
+                chat_id.push_back('\0');
+                auto result{sendToServer(chat_id.c_str(), chat_id.size(), OperationCode::PRIVATE_CHAT_GET_MESSAGES)};
 
-                //    auto new_message{_new_messages_array[source_user->getUserID()]};
-                //    auto msg_vector{new_message->getMessages(target_user->getUserID())};
-                //    auto msg_number{msg_vector.size()};
-                //    if (msg_number)
-                //    {
-                //        new_message->removeAllMessages(target_user->getUserID());
-                //    }
-                //}
-                break;
+                auto old_messages_num{-1};
+                auto old_column_num{-1};
+                auto new_messages_num{-1};
+                auto new_column_num{-1};
+                getFromBuffer(result, sizeof(int), old_messages_num);  // first int OperationCode::PRIVATE_CHAT_GET_MESSAGES
+                getFromBuffer(result, 2 * sizeof(int), old_column_num);
+                getFromBuffer(result, 3 * sizeof(int), new_messages_num);
+                getFromBuffer(result, 4 * sizeof(int), new_column_num);
+
+                auto data_ptr{result + 5 * sizeof(int)};
+                printMessages(data_ptr, old_messages_num, old_column_num, false, true);
+                printMessages(data_ptr, new_messages_num, new_column_num, true, true);
+            }
+            break;
             case 2: privateChat_addMessage(); break;
-            case 3:/* privateChat_editMessage();*/ break;
-            case 4:/* privateChat_deleteMessage();*/ break;
+            case 3: /* privateChat_editMessage();*/ break;
+            case 4: /* privateChat_deleteMessage();*/ break;
             default: isContinue = false; break;
         }
     }
 }
 
- auto Application::privateChat_addMessage() -> void
+auto Application::privateChat_addMessage() -> void
 {
-     std::string new_message{};
+    std::string new_message{};
 
-     std::cout << std::endl << YELLOW << "Input message: " << BOLDGREEN;
-     Utils::getString(new_message);
-     std::cout << RESET;
-     std::cout << BOLDYELLOW << "Send message?(Y/N):" << BOLDGREEN;
-     std::cout << RESET;
+    std::cout << std::endl << YELLOW << "Input message: " << BOLDGREEN;
+    Utils::getString(new_message);
+    std::cout << RESET;
+    std::cout << BOLDYELLOW << "Send message?(Y/N):" << BOLDGREEN;
+    std::cout << RESET;
 
-     if (!Utils::isOKSelect()) return;
-     new_message.push_back('\0');
-     new_message += _private_chat_id;
-     new_message.push_back('\0');
-     sendToServer(new_message.c_str(), new_message.size(), OperationCode::PRIVATE_CHAT_ADD_MESSAGE);  
- }
+    if (!Utils::isOKSelect()) return;
+    new_message.push_back('\0');
+    new_message += _private_chat_id;
+    new_message.push_back('\0');
+    sendToServer(new_message.c_str(), new_message.size(), OperationCode::PRIVATE_CHAT_ADD_MESSAGE);
+}
 
 // auto Application::privateChat_editMessage(
 //    const std::shared_ptr<User>& source_user, const std::shared_ptr<User>& target_user, const std::shared_ptr<Chat>& chat) const ->
@@ -683,7 +701,7 @@ auto Application::menu(std::string* string_arr, int size) const -> int
     return menu_item;
 }
 
-auto Application::printMessages(const char*& data_ptr, int messages_num, int columns_num, bool is_new) const -> void
+auto Application::printMessages(const char*& data_ptr, int messages_num, int columns_num, bool is_new, bool use_status) const -> void
 {
     std::vector<std::string> message{};
 
@@ -695,11 +713,9 @@ auto Application::printMessages(const char*& data_ptr, int messages_num, int col
             auto length{strlen(data_ptr)};
             message.push_back(data_ptr);
             data_ptr += length + 1;
-            // std::cout << message[str_index] << " " ;
         }
-        // std::cout << std::endl;
 
-        printMessage(message, is_new);
+        printMessage(message, is_new, use_status);
         if (!((msg_index + 1) % MESSAGES_ON_PAGE))
         {
             std::cout << std::endl << RESET << YELLOW << "Press Enter for continue...";
@@ -708,7 +724,7 @@ auto Application::printMessages(const char*& data_ptr, int messages_num, int col
     }
 }
 
-auto Application::printMessage(const std::vector<std::string>& message, bool is_new) const -> void
+auto Application::printMessage(const std::vector<std::string>& message, bool is_new, bool use_status) const -> void
 {
     std::cout << BOLDCYAN << std::setw(120) << std::setfill('-') << "-" << std::endl;
     std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << message[0] << "." << RESET;
@@ -719,6 +735,7 @@ auto Application::printMessage(const std::vector<std::string>& message, bool is_
 
     std::cout << message[5];  //    << std::endl;
 
+    if (use_status && message[3] == _user_id) std::cout << "       " << BOLDGREEN << message[8] << RESET;
     if (is_new && message[3] != _user_id) std::cout << "       " << BOLDRED << "New" << RESET;
     std::cout << std::endl;
 

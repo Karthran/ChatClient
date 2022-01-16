@@ -83,7 +83,7 @@ private:
 
     /* string_arr{0] is Menu Name , printed with underline and without number*/
     auto menu(std::string* string_arr, int size) const -> int;
-    auto printMessages(const char*& data_ptr, int messages_num, int columns_num, bool is_new = false) const -> void;
-    auto printMessage(const std::vector<std::string>& message, bool is_new) const -> void;
+    auto printMessages(const char*& data_ptr, int messages_num, int columns_num, bool is_new = false, bool use_status = false) const -> void;
+    auto printMessage(const std::vector<std::string>& message, bool is_new, bool use_status) const -> void;
     auto editMessage(std::string& edited_message) -> void;
 };
