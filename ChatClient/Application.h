@@ -62,7 +62,7 @@ private:
     auto privateMenu_viewUsersNames() -> void;
     auto privateMenu_viewUsersExistsChat() -> void;
     auto privateMenu_selectByID() -> void;
-    //auto printNewMessagesUsers(const std::shared_ptr<User>& user) -> void;
+    auto printUserIDNameSurnameWithNewMessages() -> void;
 
     auto privateChat() -> void;
 

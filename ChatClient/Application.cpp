@@ -424,7 +424,7 @@ auto Application::privateMenu() -> void
     auto isContinue{true};
     while (isContinue)
     {
-        // printNewMessagesUsers(user);
+        printUserIDNameSurnameWithNewMessages();
 
         std::string menu_arr[]{"Private Chat:", "View chat users names", "Select target user by name", "Select target user by ID", "Exit"};
 
@@ -534,31 +534,40 @@ auto Application::privateMenu_selectByID() -> void
     privateChat();
 }
 
-// auto Application::printNewMessagesUsers(const std::shared_ptr<User>& user) -> void
-//{
-//    //auto new_message{_new_messages_array[user->getUserID()]};
-//    //auto user_number{new_message->usersNumber()};
-//    //if (user_number)
-//    //{
-//    //    std::cout << std::endl;
-//    //    std::cout << BOLDYELLOW << UNDER_LINE << "User sended new message(s):" << RESET << std::endl;
-//    //    std::cout << std::endl;
-//    //    std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << "ID"
-//    //              << "." << BOLDYELLOW << std::setw(MAX_INPUT_SIZE) << std::setfill(' ') << std::left << "User Name" << std::endl;
-//
-//    //    for (auto i{0u}; i < user_number; ++i)
-//    //    {
-//    //        auto userID{new_message->getUserID(i)};
-//    //        auto msg_vector{new_message->getMessages(userID)};
-//    //        auto msg_number{msg_vector.size()};
-//    //        std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << userID + 1 << "." << BOLDYELLOW
-//    //                  << std::setw(MAX_INPUT_SIZE) << std::setfill(' ') << std::left << _user_array[userID]->getUserName() << RESET
-//    << GREEN
-//    //                  << "(" << msg_number << " new message(s))" << std::endl;  // array's indices begin from 0, Output indices
-//    begin from 1
-//    //    }
-//    //}
-//}
+auto Application::printUserIDNameSurnameWithNewMessages() -> void
+{
+    auto result{sendToServer(" ", 1, OperationCode::VIEW_USERS_WITH_NEW_MESSAGES)};
+    auto messages_num{-1};
+    auto columns_num{-1};
+    getFromBuffer(result, sizeof(int), messages_num);  // first int OperationCode::VIEW_USERS_WITH_NEW_MESSAGES
+    getFromBuffer(result, 2 * sizeof(int), columns_num);
+    auto data_ptr{result + 3 * sizeof(int)};
+    if (!messages_num) return;
+
+    std::vector<std::string> message{};
+
+    std::cout << std::endl;
+    std::cout << BOLDYELLOW << UNDER_LINE << "User sended new message(s):" << RESET << std::endl;
+    std::cout << std::endl;
+    std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << "ID"
+              << "." << BOLDYELLOW << /*std::setw(MAX_INPUT_SIZE) << std::setfill(' ') << std::left <<*/ "User Name" << std::endl;
+
+    for (auto msg_index{0}; msg_index < messages_num; ++msg_index)
+    {
+        message.clear();
+        for (auto str_index{0}; str_index < columns_num; ++str_index)
+        {
+            auto length{strlen(data_ptr)};
+            message.push_back(data_ptr);
+            data_ptr += length + 1;
+        }
+
+        std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << message[0] << "." << BOLDYELLOW
+                  /*<< std::setw(MAX_INPUT_SIZE) << std::setfill(' ') << std::left */
+                  << message[2] << " " << message[3] << RESET << GREEN << "(" << message[1] << " new message(s))"
+                  << std::endl;  // array's indices begin from 0, Output indices begin from 1
+    }
+}
 
 auto Application::privateChat() -> void
 {
