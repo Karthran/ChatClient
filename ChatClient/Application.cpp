@@ -393,7 +393,6 @@ auto Application::commonChat_editMessage() -> void
     editMessage(edited_message);
     edited_message = str_number + edited_message;
     edited_message.push_back('\0');
-    // auto result{sendToServer(edited_message.c_str(), edited_message.size(), OperationCode::COMMON_CHAT_EDIT_MESSAGE)};
     sendToServer(edited_message.c_str(), edited_message.size(), OperationCode::COMMON_CHAT_EDIT_MESSAGE);
 }
 
@@ -426,7 +425,7 @@ auto Application::privateMenu() -> void
     {
         printUserIDNameSurnameWithNewMessages();
 
-        std::string menu_arr[]{"Private Chat:", "View chat users names", "Select target user by name", "Select target user by ID", "Exit"};
+        std::string menu_arr[]{"Private Chat:", "View chat users names", "View users with private chat", "Select target user by ID", "Exit"};
 
         auto menu_item{menu(menu_arr, 5)};
 
@@ -479,7 +478,7 @@ auto Application::privateMenu_viewUsersNames() -> void
 
 auto Application::privateMenu_viewUsersExistsChat() -> void
 {
-    auto result{sendToServer(" ", 1, OperationCode::VIEW_USERS_ID_NAME_SURNAME)};
+    auto result{sendToServer(" ", 1, OperationCode::VIEW_USERS_WITH_PRIVATE_CHAT)};
     auto messages_num{-1};
     auto columns_num{-1};
     getFromBuffer(result, sizeof(int), messages_num);  // first int OperationCode::VIEW_USERS_ID_NAME_SURNAME
