@@ -16,6 +16,7 @@ public:
     auto setMessage(const char* msg, size_t msg_length) -> void;
     auto getServerError() const -> bool;
     auto setBufferSize(size_t size) -> void;
+    auto isError() -> bool { return _connect_error; }
 
 private:
     volatile bool _out_message_ready{false};
@@ -25,6 +26,6 @@ private:
     volatile size_t _exchange_buffer_size{DEFAULT_BUFLEN};
     volatile bool _need_exchange_buffer_resize{true};
     size_t _message_length{0};
-
+    bool _connect_error{false};
     auto client_thread() -> int;
 };

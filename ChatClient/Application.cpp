@@ -27,25 +27,22 @@
 
 Application::Application()
 {
-    _msg_buffer = new char[DEFAULT_BUFLEN];
+    _msg_buffer = std::shared_ptr<char[]>( new char[DEFAULT_BUFLEN]);
     Utils::getSelfPath(_self_path);
 }
 
 Application::~Application()
 {
-    delete[] _msg_buffer;
 }
 
 auto Application::run() -> void
 {
     Utils::printOSVersion();
 
-    _client = new Client();
+    _client = std::make_shared<Client>();
     _client->run();
 
     std::cout << std::endl << BOLDYELLOW << UNDER_LINE << "Wellcome to Console Chat!" << RESET << std::endl;
-
-    //  _user_id.push_back('\0');
 
     auto isContinue{true};
     while (isContinue)
@@ -59,16 +56,23 @@ auto Application::run() -> void
             case 1: signIn(); break;
             case 2: createAccount(); break;
             default:
-                char stop[64];
-                size_t size{0};
-                addToBuffer(stop, size, static_cast<int>(OperationCode::STOP));
-                addToBuffer(stop, size, _user_id.c_str(), _user_id.size());
-                talkToServer(stop, size);
-                isContinue = false;
-                break;
+                if (_client->isError())
+                {
+                    break;
+                }
+                else
+                {
+                    char stop[64];
+                    size_t size{0};
+                    addToBuffer(stop, size, static_cast<int>(OperationCode::STOP));
+                    addToBuffer(stop, size, _user_id.c_str(), _user_id.size());
+                    talkToServer(stop, size);
+                    isContinue = false;
+                    break;
+                }
         }
+        if (_client->isError()) break;
     }
-    delete _client;
 }
 
 auto Application::createAccount() -> void
@@ -391,6 +395,7 @@ auto Application::commonChat_editMessage() -> void
 
     std::string edited_message{};
     editMessage(edited_message);
+    if (!edited_message.size()) return;
     edited_message = str_number + edited_message;
     edited_message.push_back('\0');
     sendToServer(edited_message.c_str(), edited_message.size(), OperationCode::COMMON_CHAT_EDIT_MESSAGE);
@@ -425,7 +430,8 @@ auto Application::privateMenu() -> void
     {
         printUserIDNameSurnameWithNewMessages();
 
-        std::string menu_arr[]{"Private Chat:", "View chat users names", "View users with private chat", "Select target user by ID", "Exit"};
+        std::string menu_arr[]{
+            "Private Chat:", "View chat users names", "View users with private chat", "Select target user by ID", "Exit"};
 
         auto menu_item{menu(menu_arr, 5)};
 
@@ -561,7 +567,8 @@ auto Application::printUserIDNameSurnameWithNewMessages() -> void
             data_ptr += length + 1;
         }
 
-        std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << message[0] << "." << BOLDYELLOW
+        std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << message[0] << "."
+                  << BOLDYELLOW
                   /*<< std::setw(MAX_INPUT_SIZE) << std::setfill(' ') << std::left */
                   << message[2] << " " << message[3] << RESET << GREEN << "(" << message[1] << " new message(s))"
                   << std::endl;  // array's indices begin from 0, Output indices begin from 1
@@ -601,8 +608,8 @@ auto Application::privateChat() -> void
             }
             break;
             case 2: privateChat_addMessage(); break;
-            case 3: /* privateChat_editMessage();*/ break;
-            case 4: /* privateChat_deleteMessage();*/ break;
+            case 3: privateChat_editMessage(); break;
+            case 4: privateChat_deleteMessage(); break;
             default: isContinue = false; break;
         }
     }
@@ -625,71 +632,57 @@ auto Application::privateChat_addMessage() -> void
     sendToServer(new_message.c_str(), new_message.size(), OperationCode::PRIVATE_CHAT_ADD_MESSAGE);
 }
 
-// auto Application::privateChat_editMessage(
-//    const std::shared_ptr<User>& source_user, const std::shared_ptr<User>& target_user, const std::shared_ptr<Chat>& chat) const ->
-//    void
-//{
-//    //std::cout << std::endl << RESET << YELLOW << "Select message number for editing: " << BOLDGREEN;
-//    //int message_number{Utils::inputIntegerValue()};
-//    //std::cout << RESET;
-//    //if (chat->isInitialized())
-//    //{
-//    //    auto message{chat->editMessage(source_user, message_number - 1)};  // array's indices begin from 0, Output indices begin
-//    from 1
-//    //    if (!message->isInitialized()) return;
-//
-//    //    auto index{target_user->getUserID()};
-//    //    _new_messages_array[index]->addNewMessage(message);
-//    //}
-//}
-//
-// auto Application::privateChat_deleteMessage(
-//    const std::shared_ptr<User>& source_user, const std::shared_ptr<User>& target_user, const std::shared_ptr<Chat>& chat) const ->
-//    void
-//{
-//    //std::cout << std::endl << RESET << YELLOW << "Select message number for deleting: " << BOLDGREEN;
-//    //int message_number{Utils::inputIntegerValue()};
-//    //std::cout << RESET;
-//    //if (chat->isInitialized())
-//    //{
-//    //    auto message{chat->deleteMessage(source_user, message_number - 1)};  // array's indices begin from 0, Output indices begin
-//    from
-//    1
-//    //    if (!message->isInitialized()) return;
-//
-//    //    auto index{target_user->getUserID()};
-//    //    _new_messages_array[index]->removeNewMessage(message);
-//    //}
-//}
-//
-// auto Application::getPrivateChat(const std::shared_ptr<User>& source_user, const std::shared_ptr<User>& target_user) const
-//    -> const std::shared_ptr<Chat>
-//{
-//    //long long first_userID{source_user->getUserID()};
-//    //long long second_userID{target_user->getUserID()};
-//
-//    //Utils::minToMaxOrder(first_userID, second_userID);
-//
-//    //long long searchID{(static_cast<long long>(first_userID) << 32) + second_userID};  // Create value for search
-//
-//    //auto it = _private_chat_array.begin();
-//
-//    //for (; it != _private_chat_array.end(); ++it)
-//    //{
-//    //    if (it->first == searchID) return it->second;
-//    //}
-//
-//    //return std::make_shared<Chat>();
-//}
-//
-// auto Application::checkingForStringExistence(const std::string& string, const std::string& (User::*get)() const) const -> int
-//{
-//    //for (auto i{0}; i < _current_user_number; ++i)
-//    //{
-//    //    if (string == (_user_array[i].get()->*get)()) return i;
-//    //}
-//    //return UNSUCCESSFUL;
-//}
+auto Application::privateChat_editMessage() -> void
+{
+    std::cout << std::endl << YELLOW << "Select message number for editing: " << BOLDGREEN;
+    int message_number{Utils::inputIntegerValue()};
+    std::cout << RESET;
+    auto query_data{std::to_string(message_number)};
+    query_data.push_back('\0');
+    query_data += _private_chat_id;
+    query_data.push_back('\0');
+
+    auto result{sendToServer(query_data.c_str(), query_data.size(), OperationCode::PRIVATE_CHAT_CHECK_MESSAGE)};
+    auto messages_num{-1};
+    auto column_num{-1};
+    getFromBuffer(result, sizeof(int), messages_num);  // first int OperationCode::COMMON_CHAT_CHECK_MESSAGE
+    getFromBuffer(result, 2 * sizeof(int), column_num);
+    auto data_ptr{result + 3 * sizeof(int)};
+    if (!messages_num) return;
+    printMessages(data_ptr, messages_num, column_num);
+
+    std::string edited_message{};
+    editMessage(edited_message);
+    if (!edited_message.size()) return;
+    edited_message = query_data + edited_message;
+    edited_message.push_back('\0');
+    sendToServer(edited_message.c_str(), edited_message.size(), OperationCode::PRIVATE_CHAT_EDIT_MESSAGE);
+}
+
+auto Application::privateChat_deleteMessage() -> void
+{
+     std::cout << std::endl << RESET << YELLOW << "Select message number for deleting: " << BOLDGREEN;
+     int message_number{Utils::inputIntegerValue()};
+     std::cout << RESET;
+     auto query_data{std::to_string(message_number)};
+     query_data.push_back('\0');
+     query_data += _private_chat_id;
+     query_data.push_back('\0');
+
+     auto result{sendToServer(query_data.c_str(), query_data.size(), OperationCode::PRIVATE_CHAT_CHECK_MESSAGE)};
+     auto messages_num{-1};
+     auto column_num{-1};
+     getFromBuffer(result, sizeof(int), messages_num);  // first int OperationCode::COMMON_CHAT_CHECK_MESSAGE
+     getFromBuffer(result, 2 * sizeof(int), column_num);
+     auto data_ptr{result + 3 * sizeof(int)};
+     if (!messages_num) return;
+
+     printMessages(data_ptr, messages_num, column_num);
+     std::cout << BOLDYELLOW << "Delete message?(Y/N):" << BOLDGREEN;
+     if (!Utils::isOKSelect()) return;
+     std::cout << RESET;
+     sendToServer(query_data.c_str(), query_data.size(), OperationCode::PRIVATE_CHAT_DELETE_MESSAGE);
+}
 
 auto Application::menu(std::string* string_arr, int size) const -> int
 {
@@ -776,29 +769,28 @@ auto Application::sendToServer(const char* message, size_t message_length, Opera
     {
         _msg_buffer_size = message_length + HEADER_SIZE;
         _client->setBufferSize(_msg_buffer_size);
-        delete[] _msg_buffer;
-        _msg_buffer = new char[_msg_buffer_size];
+        _msg_buffer = std::shared_ptr<char[]>(new char[_msg_buffer_size]);
     }
 
     _client->setBufferSize(message_length + HEADER_SIZE);
     _current_msg_length = 0;
-    addToBuffer(_msg_buffer, _current_msg_length, static_cast<int>(OperationCode::CHECK_SIZE));
-    addToBuffer(_msg_buffer, _current_msg_length, message_length);
-    auto receive_buf{talkToServer(_msg_buffer, _current_msg_length)};
+    addToBuffer(_msg_buffer.get(), _current_msg_length, static_cast<int>(OperationCode::CHECK_SIZE));
+    addToBuffer(_msg_buffer.get(), _current_msg_length, message_length);
+    auto receive_buf{talkToServer(_msg_buffer.get(), _current_msg_length)};
 
     _current_msg_length = 0;
-    addToBuffer(_msg_buffer, _current_msg_length, static_cast<int>(operation_code));
-    addToBuffer(_msg_buffer, _current_msg_length, static_cast<int>(OperationCode::CHECK_SIZE));
-    addToBuffer(_msg_buffer, _current_msg_length, message, message_length);
-    receive_buf = talkToServer(_msg_buffer, _current_msg_length);
+    addToBuffer(_msg_buffer.get(), _current_msg_length, static_cast<int>(operation_code));
+    addToBuffer(_msg_buffer.get(), _current_msg_length, static_cast<int>(OperationCode::CHECK_SIZE));
+    addToBuffer(_msg_buffer.get(), _current_msg_length, message, message_length);
+    receive_buf = talkToServer(_msg_buffer.get(), _current_msg_length);
 
     auto message_size{-1};
     getFromBuffer(receive_buf, sizeof(int), message_size);
     _client->setBufferSize(message_size + HEADER_SIZE);
     _current_msg_length = 0;
-    addToBuffer(_msg_buffer, _current_msg_length, static_cast<int>(operation_code));
-    addToBuffer(_msg_buffer, _current_msg_length, static_cast<int>(OperationCode::READY));
-    receive_buf = talkToServer(_msg_buffer, _current_msg_length);
+    addToBuffer(_msg_buffer.get(), _current_msg_length, static_cast<int>(operation_code));
+    addToBuffer(_msg_buffer.get(), _current_msg_length, static_cast<int>(OperationCode::READY));
+    receive_buf = talkToServer(_msg_buffer.get(), _current_msg_length);
     receive_buf[message_size] = '\0';
 
     return receive_buf;

@@ -48,6 +48,7 @@ auto Client::client_thread() -> int
     if (iResult != 0)
     {
         printf("WSAStartup failed with error: %d\n", iResult);
+        _connect_error = true;
         return 1;
     }
 
@@ -62,6 +63,7 @@ auto Client::client_thread() -> int
     {
         printf("getaddrinfo failed with error: %d\n", iResult);
         WSACleanup();
+        _connect_error = true;
         return 1;
     }
 
@@ -75,6 +77,7 @@ auto Client::client_thread() -> int
         {
             printf("socket failed with error: %ld\n", WSAGetLastError());
             WSACleanup();
+            _connect_error = true;
             return 1;
         }
 
@@ -95,10 +98,10 @@ auto Client::client_thread() -> int
     {
         printf("Unable to connect to server!\n");
         WSACleanup();
+        _connect_error = true;
         return 1;
     }
 
-    /*char* recvbuf{nullptr};*/
     size_t current_buffer_size{0};
 
     while (true)
@@ -108,9 +111,7 @@ auto Client::client_thread() -> int
             if (current_buffer_size < _exchange_buffer_size)
             {
                 current_buffer_size = _exchange_buffer_size;
-                _exchange_buffer = std::shared_ptr<char[]>(new char[current_buffer_size]);  /////////////////////////////////////
-
-                // std::cout << " New Buffer Size: " << current_buffer_size << std::endl;
+                _exchange_buffer = std::shared_ptr<char[]>(new char[current_buffer_size]);  
             }
             _need_exchange_buffer_resize = false;
         }
@@ -119,7 +120,7 @@ auto Client::client_thread() -> int
         {
         }
 
-        iResult = send(ConnectSocket, _exchange_buffer.get(), _message_length, 0);  //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        iResult = send(ConnectSocket, _exchange_buffer.get(), _message_length, 0);  
 
         if (iResult == SOCKET_ERROR)
         {
@@ -130,26 +131,18 @@ auto Client::client_thread() -> int
             break;
         }
         _out_message_ready = false;
-        // printf("Bytes Sent: %ld\n", iResult);
 
-        if (*(reinterpret_cast<int*>(_exchange_buffer.get())) ==
-            static_cast<int>(OperationCode::STOP))  // TODO Check exit
-                                                    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        if (*(reinterpret_cast<int*>(_exchange_buffer.get())) == static_cast<int>(OperationCode::STOP))
         {
-            // shutdown the connection since no more data will be sent
             iResult = shutdown(ConnectSocket, SD_SEND);
             _server_error = true;
             break;
         }
 
-        iResult = recv(ConnectSocket, _exchange_buffer.get(), current_buffer_size, 0);  ///////////////////////////////////////
+        iResult = recv(ConnectSocket, _exchange_buffer.get(), current_buffer_size, 0);  
         if (iResult > 0)
         {
-            // printf("Bytes received: %d\n", iResult);
-            // message = std::string(recvbuf, iResult);
             _in_message_ready = true;
-
-            // std::cout << "InMessage: " << message << std::endl;
         }
         else if (iResult == 0)
         {
@@ -162,11 +155,9 @@ auto Client::client_thread() -> int
             break;
         }
     }
-    // cleanup
     closesocket(ConnectSocket);
     WSACleanup();
 
- //   _exchange_buffer = nullptr;  ////////////////////////////////////////////////////////////////////////////
     return 0;
 }
 
@@ -181,7 +172,8 @@ auto Client::client_thread() -> int
     if (socket_file_descriptor == -1)
     {
         std::cout << "Creation of Socket failed!" << std::endl;
-        exit(1);
+        _connect_error = true;
+        return 1;
     }
 
     serveraddress.sin_addr.s_addr = inet_addr("127.0.0.1");
@@ -191,7 +183,8 @@ auto Client::client_thread() -> int
     if (connection == -1)
     {
         std::cout << "Connection with the server failed.!" << std::endl;
-        exit(1);
+        _connect_error = true;
+        return 1;
     }
 
     size_t current_buffer_size{0};
@@ -237,7 +230,6 @@ auto Client::client_thread() -> int
     }
 
     close(connection);
-//    _exchange_buffer = nullptr;
 
     return 0;
 }
@@ -246,6 +238,7 @@ auto Client::client_thread() -> int
 
 auto Client::run() -> void
 {
+    _exchange_buffer = std::shared_ptr<char[]>(new char[DEFAULT_BUFLEN]);
     std::thread tr(&Client::client_thread, this);
     tr.detach();
 }

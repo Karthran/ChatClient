@@ -8,10 +8,10 @@
 class Client;
 enum class OperationCode;
 
-//class Chat;
-//class User;
-//class PasswordHash;
-//class NewMessages;
+// class Chat;
+// class User;
+// class PasswordHash;
+// class NewMessages;
 
 class Application
 {
@@ -23,8 +23,8 @@ public:
     auto sendToServer(const char* message, size_t message_length, OperationCode operation_code) -> const char*;
 
 private:
-    Client* _client{nullptr};
-    char* _msg_buffer{nullptr};
+    std::shared_ptr<Client> _client{};
+    std::shared_ptr <char[]> _msg_buffer{};
     size_t _msg_buffer_size{0};
     size_t _current_msg_length{0};
 
@@ -68,22 +68,21 @@ private:
 
     auto privateChat_addMessage() -> void;
 
-    //auto privateChat_editMessage(const std::shared_ptr<User>& source_user, const std::shared_ptr<User>& target_user,
-    //    const std::shared_ptr<Chat>& chat) const -> void;
+    auto privateChat_editMessage() -> void;
 
-    //auto privateChat_deleteMessage(const std::shared_ptr<User>& source_user, const std::shared_ptr<User>& target_user,
-    //    const std::shared_ptr<Chat>& chat) const -> void;
+    auto privateChat_deleteMessage() -> void;
 
     /*Finds chat in array, return empty shared_ptr if chat don't exist */
-    //auto getPrivateChat(const std::shared_ptr<User>& source_user, const std::shared_ptr<User>& target_user) const
+    // auto getPrivateChat(const std::shared_ptr<User>& source_user, const std::shared_ptr<User>& target_user) const
     //    -> const std::shared_ptr<Chat>;
 
     /*Searches for matching line*/
-    //auto checkingForStringExistence(const std::string& string, const std::string& (User::*get)() const) const -> int;
+    // auto checkingForStringExistence(const std::string& string, const std::string& (User::*get)() const) const -> int;
 
     /* string_arr{0] is Menu Name , printed with underline and without number*/
     auto menu(std::string* string_arr, int size) const -> int;
-    auto printMessages(const char*& data_ptr, int messages_num, int columns_num, bool is_new = false, bool use_status = false) const -> void;
+    auto printMessages(const char*& data_ptr, int messages_num, int columns_num, bool is_new = false, bool use_status = false) const
+        -> void;
     auto printMessage(const std::vector<std::string>& message, bool is_new, bool use_status) const -> void;
     auto editMessage(std::string& edited_message) -> void;
 };
