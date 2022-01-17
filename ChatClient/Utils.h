@@ -1,6 +1,5 @@
 #pragma once
 #include <string>
-//#define _DEBUG
 #ifdef  _WIN32
 #ifndef _DEBUG
 const std::string RESET = "";
