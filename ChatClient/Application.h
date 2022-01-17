@@ -8,11 +8,6 @@
 class Client;
 enum class OperationCode;
 
-// class Chat;
-// class User;
-// class PasswordHash;
-// class NewMessages;
-
 class Application
 {
 public:
@@ -71,13 +66,6 @@ private:
     auto privateChat_editMessage() -> void;
 
     auto privateChat_deleteMessage() -> void;
-
-    /*Finds chat in array, return empty shared_ptr if chat don't exist */
-    // auto getPrivateChat(const std::shared_ptr<User>& source_user, const std::shared_ptr<User>& target_user) const
-    //    -> const std::shared_ptr<Chat>;
-
-    /*Searches for matching line*/
-    // auto checkingForStringExistence(const std::string& string, const std::string& (User::*get)() const) const -> int;
 
     /* string_arr{0] is Menu Name , printed with underline and without number*/
     auto menu(std::string* string_arr, int size) const -> int;

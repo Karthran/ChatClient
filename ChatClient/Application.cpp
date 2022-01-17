@@ -1,23 +1,17 @@
 ﻿#include <iostream>
+#include <memory>
 #include <cassert>
 #include <iomanip>
 #include <exception>
 #include <fstream>
 #include <sstream>
 #include <string.h>
+
 #include "Application.h"
 #include "Client.h"
 #include "core.h"
 
 #include "Utils.h"
-
-//#include "Chat.h"
-//#include "Message.h"
-//#include "User.h"
-//#include "SHA1.h"
-//#include "PasswordHash.h"
-//#include "FileUtils.h"
-//#include "NewMessages.h"
 
 #ifdef _WIN32
 #include <cstdio>
@@ -231,7 +225,7 @@ auto Application::signIn() -> void
         query += user_password;
         query.push_back('\0');
 
-        auto result{sendToServer(query.c_str(), query.size(), OperationCode::SIGN_IN)};  // in result now ID or ERROR
+        auto result{sendToServer(query.c_str(), query.size(), OperationCode::SIGN_IN)};  
 
         if (strcmp(result, RETURN_ERROR.c_str()))
         {
@@ -412,7 +406,7 @@ auto Application::commonChat_deleteMessage() -> void
     auto result{sendToServer(str_number.c_str(), str_number.size(), OperationCode::COMMON_CHAT_CHECK_MESSAGE)};
     auto messages_num{-1};
     auto column_num{-1};
-    getFromBuffer(result, sizeof(int), messages_num);  // first int OperationCode::COMMON_CHAT_GET_MESSAGES
+    getFromBuffer(result, sizeof(int), messages_num);  // first int OperationCode::COMMON_CHAT_CHECK_MESSAGE
     getFromBuffer(result, 2 * sizeof(int), column_num);
     auto data_ptr{result + 3 * sizeof(int)};
     if (!messages_num) return;
@@ -459,7 +453,7 @@ auto Application::privateMenu_viewUsersNames() -> void
 
     std::cout << std::endl;
     std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << "ID"
-              << "." << BOLDYELLOW << /*std::setw(MAX_INPUT_SIZE) << std::setfill(' ') << std::left <<*/ "User Name" << std::endl;
+              << "." << BOLDYELLOW <<  "User Name" << std::endl;
 
     for (auto msg_index{0}; msg_index < messages_num; ++msg_index)
     {
@@ -471,7 +465,7 @@ auto Application::privateMenu_viewUsersNames() -> void
             data_ptr += length + 1;
         }
         std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << message[0] << "." << BOLDYELLOW
-                  << /*std::setw(MAX_INPUT_SIZE) << std::setfill(' ') << std::left <<*/ message[1] << " " << message[2] << std::endl;
+                  <<  message[1] << " " << message[2] << std::endl;
 
         if (!((msg_index + 1) % LINE_TO_PAGE))
         {
@@ -487,7 +481,7 @@ auto Application::privateMenu_viewUsersExistsChat() -> void
     auto result{sendToServer(" ", 1, OperationCode::VIEW_USERS_WITH_PRIVATE_CHAT)};
     auto messages_num{-1};
     auto columns_num{-1};
-    getFromBuffer(result, sizeof(int), messages_num);  // first int OperationCode::VIEW_USERS_ID_NAME_SURNAME
+    getFromBuffer(result, sizeof(int), messages_num);  // first int OperationCode::VIEW_USERS_WITH_PRIVATE_CHAT
     getFromBuffer(result, 2 * sizeof(int), columns_num);
     auto data_ptr{result + 3 * sizeof(int)};
     if (!messages_num) return;
@@ -496,7 +490,7 @@ auto Application::privateMenu_viewUsersExistsChat() -> void
 
     std::cout << std::endl;
     std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << "ID"
-              << "." << BOLDYELLOW << /*std::setw(MAX_INPUT_SIZE) << std::setfill(' ') << std::left <<*/ "User Name" << std::endl;
+              << "." << BOLDYELLOW << "User Name" << std::endl;
 
     for (auto msg_index{0}; msg_index < messages_num; ++msg_index)
     {
@@ -508,7 +502,7 @@ auto Application::privateMenu_viewUsersExistsChat() -> void
             data_ptr += length + 1;
         }
         std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << message[0] << "." << BOLDYELLOW
-                  << /*std::setw(MAX_INPUT_SIZE) << std::setfill(' ') << std::left <<*/ message[1] << " " << message[2] << std::endl;
+                  <<  message[1] << " " << message[2] << std::endl;
 
         if (!((msg_index + 1) % LINE_TO_PAGE))
         {
@@ -555,7 +549,7 @@ auto Application::printUserIDNameSurnameWithNewMessages() -> void
     std::cout << BOLDYELLOW << UNDER_LINE << "User sended new message(s):" << RESET << std::endl;
     std::cout << std::endl;
     std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << "ID"
-              << "." << BOLDYELLOW << /*std::setw(MAX_INPUT_SIZE) << std::setfill(' ') << std::left <<*/ "User Name" << std::endl;
+              << "." << BOLDYELLOW <<  "User Name" << std::endl;
 
     for (auto msg_index{0}; msg_index < messages_num; ++msg_index)
     {
@@ -569,9 +563,8 @@ auto Application::printUserIDNameSurnameWithNewMessages() -> void
 
         std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << message[0] << "."
                   << BOLDYELLOW
-                  /*<< std::setw(MAX_INPUT_SIZE) << std::setfill(' ') << std::left */
                   << message[2] << " " << message[3] << RESET << GREEN << "(" << message[1] << " new message(s))"
-                  << std::endl;  // array's indices begin from 0, Output indices begin from 1
+                  << std::endl;  
     }
 }
 
@@ -730,11 +723,11 @@ auto Application::printMessage(const std::vector<std::string>& message, bool is_
     std::cout << BOLDCYAN << std::setw(120) << std::setfill('-') << "-" << std::endl;
     std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << message[0] << "." << RESET;
     std::cout << YELLOW << "  Created: ";
-    std::cout << BOLDYELLOW /*<< std::setw(MAX_INPUT_SIZE) << std::setfill(' ') << std::left */ << message[1] << " " << message[2] << " "
+    std::cout << BOLDYELLOW << message[1] << " " << message[2] << " "
               << "(ID: " << message[3] << ")";
     std::cout << std::setw(20) << std::setfill(' ') << RESET << YELLOW;
 
-    std::cout << message[5];  //    << std::endl;
+    std::cout << message[5]; 
 
     if (use_status && message[3] == _user_id) std::cout << "       " << BOLDGREEN << message[8] << RESET;
     if (is_new && message[3] != _user_id) std::cout << "       " << BOLDRED << "New" << RESET;
@@ -801,7 +794,6 @@ auto Application::talkToServer(const char* message, size_t msg_length) const -> 
     while (_client->getOutMessageReady())
     {
     }
-    // std::cout << message << std::endl;
     _client->setMessage(message, msg_length);
     _client->setOutMessageReady(true);
     while (!_client->getInMessageReady())
