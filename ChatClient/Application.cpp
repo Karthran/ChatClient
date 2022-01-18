@@ -21,13 +21,11 @@
 
 Application::Application()
 {
-    _msg_buffer = std::shared_ptr<char[]>( new char[DEFAULT_BUFLEN]);
+    _msg_buffer = std::shared_ptr<char[]>(new char[DEFAULT_BUFLEN]);
     Utils::getSelfPath(_self_path);
 }
 
-Application::~Application()
-{
-}
+Application::~Application() {}
 
 auto Application::run() -> void
 {
@@ -225,7 +223,7 @@ auto Application::signIn() -> void
         query += user_password;
         query.push_back('\0');
 
-        auto result{sendToServer(query.c_str(), query.size(), OperationCode::SIGN_IN)};  
+        auto result{sendToServer(query.c_str(), query.size(), OperationCode::SIGN_IN)};
 
         if (strcmp(result, RETURN_ERROR.c_str()))
         {
@@ -453,7 +451,7 @@ auto Application::privateMenu_viewUsersNames() -> void
 
     std::cout << std::endl;
     std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << "ID"
-              << "." << BOLDYELLOW <<  "User Name" << std::endl;
+              << "." << BOLDYELLOW << "User Name" << std::endl;
 
     for (auto msg_index{0}; msg_index < messages_num; ++msg_index)
     {
@@ -464,8 +462,8 @@ auto Application::privateMenu_viewUsersNames() -> void
             message.push_back(data_ptr);
             data_ptr += length + 1;
         }
-        std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << message[0] << "." << BOLDYELLOW
-                  <<  message[1] << " " << message[2] << std::endl;
+        std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << message[0] << "." << BOLDYELLOW << message[1] << " "
+                  << message[2] << std::endl;
 
         if (!((msg_index + 1) % LINE_TO_PAGE))
         {
@@ -501,8 +499,8 @@ auto Application::privateMenu_viewUsersExistsChat() -> void
             message.push_back(data_ptr);
             data_ptr += length + 1;
         }
-        std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << message[0] << "." << BOLDYELLOW
-                  <<  message[1] << " " << message[2] << std::endl;
+        std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << message[0] << "." << BOLDYELLOW << message[1] << " "
+                  << message[2] << std::endl;
 
         if (!((msg_index + 1) % LINE_TO_PAGE))
         {
@@ -549,7 +547,7 @@ auto Application::printUserIDNameSurnameWithNewMessages() -> void
     std::cout << BOLDYELLOW << UNDER_LINE << "User sended new message(s):" << RESET << std::endl;
     std::cout << std::endl;
     std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << "ID"
-              << "." << BOLDYELLOW <<  "User Name" << std::endl;
+              << "." << BOLDYELLOW << "User Name" << std::endl;
 
     for (auto msg_index{0}; msg_index < messages_num; ++msg_index)
     {
@@ -561,10 +559,8 @@ auto Application::printUserIDNameSurnameWithNewMessages() -> void
             data_ptr += length + 1;
         }
 
-        std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << message[0] << "."
-                  << BOLDYELLOW
-                  << message[2] << " " << message[3] << RESET << GREEN << "(" << message[1] << " new message(s))"
-                  << std::endl;  
+        std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << message[0] << "." << BOLDYELLOW << message[2] << " "
+                  << message[3] << RESET << GREEN << "(" << message[1] << " new message(s))" << std::endl;
     }
 }
 
@@ -642,7 +638,7 @@ auto Application::privateChat_editMessage() -> void
     getFromBuffer(result, 2 * sizeof(int), column_num);
     auto data_ptr{result + 3 * sizeof(int)};
     if (!messages_num) return;
-    printMessages(data_ptr, messages_num, column_num);
+    printMessages(data_ptr, messages_num, column_num, false, true);
 
     std::string edited_message{};
     editMessage(edited_message);
@@ -654,27 +650,27 @@ auto Application::privateChat_editMessage() -> void
 
 auto Application::privateChat_deleteMessage() -> void
 {
-     std::cout << std::endl << RESET << YELLOW << "Select message number for deleting: " << BOLDGREEN;
-     int message_number{Utils::inputIntegerValue()};
-     std::cout << RESET;
-     auto query_data{std::to_string(message_number)};
-     query_data.push_back('\0');
-     query_data += _private_chat_id;
-     query_data.push_back('\0');
+    std::cout << std::endl << RESET << YELLOW << "Select message number for deleting: " << BOLDGREEN;
+    int message_number{Utils::inputIntegerValue()};
+    std::cout << RESET;
+    auto query_data{std::to_string(message_number)};
+    query_data.push_back('\0');
+    query_data += _private_chat_id;
+    query_data.push_back('\0');
 
-     auto result{sendToServer(query_data.c_str(), query_data.size(), OperationCode::PRIVATE_CHAT_CHECK_MESSAGE)};
-     auto messages_num{-1};
-     auto column_num{-1};
-     getFromBuffer(result, sizeof(int), messages_num);  // first int OperationCode::COMMON_CHAT_CHECK_MESSAGE
-     getFromBuffer(result, 2 * sizeof(int), column_num);
-     auto data_ptr{result + 3 * sizeof(int)};
-     if (!messages_num) return;
+    auto result{sendToServer(query_data.c_str(), query_data.size(), OperationCode::PRIVATE_CHAT_CHECK_MESSAGE)};
+    auto messages_num{-1};
+    auto column_num{-1};
+    getFromBuffer(result, sizeof(int), messages_num);  // first int OperationCode::COMMON_CHAT_CHECK_MESSAGE
+    getFromBuffer(result, 2 * sizeof(int), column_num);
+    auto data_ptr{result + 3 * sizeof(int)};
+    if (!messages_num) return;
 
-     printMessages(data_ptr, messages_num, column_num);
-     std::cout << BOLDYELLOW << "Delete message?(Y/N):" << BOLDGREEN;
-     if (!Utils::isOKSelect()) return;
-     std::cout << RESET;
-     sendToServer(query_data.c_str(), query_data.size(), OperationCode::PRIVATE_CHAT_DELETE_MESSAGE);
+    printMessages(data_ptr, messages_num, column_num, false, true);
+    std::cout << BOLDYELLOW << "Delete message?(Y/N):" << BOLDGREEN;
+    if (!Utils::isOKSelect()) return;
+    std::cout << RESET;
+    sendToServer(query_data.c_str(), query_data.size(), OperationCode::PRIVATE_CHAT_DELETE_MESSAGE);
 }
 
 auto Application::menu(std::string* string_arr, int size) const -> int
@@ -727,7 +723,7 @@ auto Application::printMessage(const std::vector<std::string>& message, bool is_
               << "(ID: " << message[3] << ")";
     std::cout << std::setw(20) << std::setfill(' ') << RESET << YELLOW;
 
-    std::cout << message[5]; 
+    std::cout << message[5];
 
     if (use_status && message[3] == _user_id) std::cout << "       " << BOLDGREEN << message[8] << RESET;
     if (is_new && message[3] != _user_id) std::cout << "       " << BOLDRED << "New" << RESET;
