@@ -47,8 +47,11 @@ private:
     auto signIn_inputPassword(std::string& user_password) const -> void;
 
     auto selectCommonOrPrivate() -> void;
+    auto addNewMsgInCommonChatToMenuItem(std::string& menu_item) -> void;
+    auto addNewMsgInPrivateChatToMenuItem(std::string& menu_item) -> void;
 
     auto commonChat() -> int;
+    auto commonChat_viewMessage() -> void;
     auto commonChat_addMessage() -> void;
     auto commonChat_editMessage() -> void;
     auto commonChat_deleteMessage() -> void;
@@ -60,11 +63,9 @@ private:
     auto printUserIDNameSurnameWithNewMessages() -> void;
 
     auto privateChat() -> void;
-
+    auto privateChat_viewMessage() -> void;
     auto privateChat_addMessage() -> void;
-
     auto privateChat_editMessage() -> void;
-
     auto privateChat_deleteMessage() -> void;
 
     /* string_arr{0] is Menu Name , printed with underline and without number*/

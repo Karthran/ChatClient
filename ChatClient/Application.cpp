@@ -1,10 +1,7 @@
 ﻿#include <iostream>
 #include <memory>
-//#include <cassert>
 #include <iomanip>
 #include <exception>
-//#include <fstream>
-//#include <sstream>
 #include <string.h>
 
 #include "Application.h"
@@ -257,49 +254,8 @@ auto Application::selectCommonOrPrivate() -> void
     {
         std::string menu_arr[] = {"Select chat type:", "Common chat", "Private chat", "Sign Out"};
 
-        auto result{sendToServer(" ", 1, OperationCode::NEW_MESSAGES_IN_COMMON_CHAT)};
-
-        auto row_num{-1};
-        auto column_num{-1};
-        getFromBuffer(result, sizeof(int), row_num);
-        getFromBuffer(result, 2 * sizeof(int), column_num);
-        auto data_ptr{result + 3 * sizeof(int)};
-        if (row_num)
-        {
-            auto sum_msg{0};
-            for (auto i{0}; i < row_num; ++i)
-            {
-                auto length{strlen(data_ptr)};
-                data_ptr += length + 1;
-                sum_msg += std::stoi(data_ptr);
-                length = strlen(data_ptr);
-                data_ptr += length + 1;
-            }
-            menu_arr[1] = BOLDYELLOW + menu_arr[1] + RESET + GREEN + "(" + std::to_string(sum_msg) + " new message(s) from " +
-                          std::to_string(row_num) + " user(s))" + RESET;  // menu_arr[1] = "Common chat"
-        }
-
-        auto res{sendToServer(" ", 1, OperationCode::NEW_MESSAGES_IN_PRIVATE_CHAT)};
-
-        row_num = -1;
-        column_num = -1;
-        getFromBuffer(res, sizeof(int), row_num);
-        getFromBuffer(res, 2 * sizeof(int), column_num);
-        data_ptr = res + 3 * sizeof(int);
-        if (row_num)
-        {
-            auto sum_msg{0};
-            for (auto i{0}; i < row_num; ++i)
-            {
-                auto length{strlen(data_ptr)};
-                data_ptr += length + 1;
-                sum_msg += std::stoi(data_ptr);
-                length = strlen(data_ptr);
-                data_ptr += length + 1;
-            }
-            menu_arr[2] = BOLDYELLOW + menu_arr[2] + RESET + GREEN + "(" + std::to_string(sum_msg) + " new message(s) from " +
-                          std::to_string(row_num) + " user(s))" + RESET;  // menu_arr[2] = "Private chat"
-        }
+        addNewMsgInCommonChatToMenuItem(menu_arr[1]);
+        addNewMsgInPrivateChatToMenuItem(menu_arr[2]);
 
         auto menu_item{menu(menu_arr, 4)};
 
@@ -314,6 +270,55 @@ auto Application::selectCommonOrPrivate() -> void
     return;
 }
 
+auto Application::addNewMsgInCommonChatToMenuItem(std::string& menu_item) -> void
+{
+    auto result{sendToServer(" ", 1, OperationCode::NEW_MESSAGES_IN_COMMON_CHAT)};
+
+    auto row_num{-1};
+    auto column_num{-1};
+    getFromBuffer(result, sizeof(int), row_num);
+    getFromBuffer(result, 2 * sizeof(int), column_num);
+    auto data_ptr{result + 3 * sizeof(int)};
+    if (row_num)
+    {
+        auto sum_msg{0};
+        for (auto i{0}; i < row_num; ++i)
+        {
+            auto length{strlen(data_ptr)};
+            data_ptr += length + 1;
+            sum_msg += std::stoi(data_ptr);
+            length = strlen(data_ptr);
+            data_ptr += length + 1;
+        }
+        menu_item = BOLDYELLOW + menu_item + RESET + GREEN + "(" + std::to_string(sum_msg) + " new message(s) from " +
+                    std::to_string(row_num) + " user(s))" + RESET;
+    }
+}
+
+auto Application::addNewMsgInPrivateChatToMenuItem(std::string& menu_item) -> void
+{
+    auto result{sendToServer(" ", 1, OperationCode::NEW_MESSAGES_IN_PRIVATE_CHAT)};
+    auto row_num{-1};
+    auto column_num{-1};
+    getFromBuffer(result, sizeof(int), row_num);
+    getFromBuffer(result, 2 * sizeof(int), column_num);
+    auto data_ptr{result + 3 * sizeof(int)};
+    if (row_num)
+    {
+        auto sum_msg{0};
+        for (auto i{0}; i < row_num; ++i)
+        {
+            auto length{strlen(data_ptr)};
+            data_ptr += length + 1;
+            sum_msg += std::stoi(data_ptr);
+            length = strlen(data_ptr);
+            data_ptr += length + 1;
+        }
+        menu_item = BOLDYELLOW + menu_item + RESET + GREEN + "(" + std::to_string(sum_msg) + " new message(s) from " +
+                    std::to_string(row_num) + " user(s))" + RESET;
+    }
+}
+
 auto Application::commonChat() -> int
 {
     auto isContinue{true};
@@ -324,25 +329,7 @@ auto Application::commonChat() -> int
 
         switch (menu_item)
         {
-            case 1:
-            {
-                auto result{sendToServer(" ", 1, OperationCode::COMMON_CHAT_GET_MESSAGES)};
-
-                auto old_messages_num{-1};
-                auto old_column_num{-1};
-                auto new_messages_num{-1};
-                auto new_column_num{-1};
-                getFromBuffer(result, sizeof(int), old_messages_num);  // first int OperationCode::COMMON_CHAT_GET_MESSAGES
-                getFromBuffer(result, 2 * sizeof(int), old_column_num);
-                getFromBuffer(result, 3 * sizeof(int), new_messages_num);
-                getFromBuffer(result, 4 * sizeof(int), new_column_num);
-
-                auto data_ptr{result + 5 * sizeof(int)};
-                printMessages(data_ptr, old_messages_num, old_column_num);
-                printMessages(data_ptr, new_messages_num, new_column_num, true);
-
-                break;
-            }
+            case 1: commonChat_viewMessage(); break;
             case 2: commonChat_addMessage(); break;
             case 3: commonChat_editMessage(); break;
             case 4: commonChat_deleteMessage(); break;
@@ -350,6 +337,24 @@ auto Application::commonChat() -> int
         }
     }
     return SUCCESSFUL;
+}
+
+auto Application::commonChat_viewMessage() -> void
+{
+    auto result{sendToServer(" ", 1, OperationCode::COMMON_CHAT_GET_MESSAGES)};
+
+    auto old_messages_num{-1};
+    auto old_column_num{-1};
+    auto new_messages_num{-1};
+    auto new_column_num{-1};
+    getFromBuffer(result, sizeof(int), old_messages_num);  // first int OperationCode::COMMON_CHAT_GET_MESSAGES
+    getFromBuffer(result, 2 * sizeof(int), old_column_num);
+    getFromBuffer(result, 3 * sizeof(int), new_messages_num);
+    getFromBuffer(result, 4 * sizeof(int), new_column_num);
+
+    auto data_ptr{result + 5 * sizeof(int)};
+    printMessages(data_ptr, old_messages_num, old_column_num);
+    printMessages(data_ptr, new_messages_num, new_column_num, true);
 }
 
 auto Application::commonChat_addMessage() -> void
@@ -576,32 +581,33 @@ auto Application::privateChat() -> void
 
         switch (menu_item)
         {
-            case 1:
-            {
-                std::string chat_id = _private_chat_id;
-                chat_id.push_back('\0');
-                auto result{sendToServer(chat_id.c_str(), chat_id.size(), OperationCode::PRIVATE_CHAT_GET_MESSAGES)};
-
-                auto old_messages_num{-1};
-                auto old_column_num{-1};
-                auto new_messages_num{-1};
-                auto new_column_num{-1};
-                getFromBuffer(result, sizeof(int), old_messages_num);  // first int OperationCode::PRIVATE_CHAT_GET_MESSAGES
-                getFromBuffer(result, 2 * sizeof(int), old_column_num);
-                getFromBuffer(result, 3 * sizeof(int), new_messages_num);
-                getFromBuffer(result, 4 * sizeof(int), new_column_num);
-
-                auto data_ptr{result + 5 * sizeof(int)};
-                printMessages(data_ptr, old_messages_num, old_column_num, false, true);
-                printMessages(data_ptr, new_messages_num, new_column_num, true, true);
-            }
-            break;
+            case 1: privateChat_viewMessage(); break;
             case 2: privateChat_addMessage(); break;
             case 3: privateChat_editMessage(); break;
             case 4: privateChat_deleteMessage(); break;
             default: isContinue = false; break;
         }
     }
+}
+
+auto Application::privateChat_viewMessage() -> void
+{
+    std::string chat_id = _private_chat_id;
+    chat_id.push_back('\0');
+    auto result{sendToServer(chat_id.c_str(), chat_id.size(), OperationCode::PRIVATE_CHAT_GET_MESSAGES)};
+
+    auto old_messages_num{-1};
+    auto old_column_num{-1};
+    auto new_messages_num{-1};
+    auto new_column_num{-1};
+    getFromBuffer(result, sizeof(int), old_messages_num);  // first int OperationCode::PRIVATE_CHAT_GET_MESSAGES
+    getFromBuffer(result, 2 * sizeof(int), old_column_num);
+    getFromBuffer(result, 3 * sizeof(int), new_messages_num);
+    getFromBuffer(result, 4 * sizeof(int), new_column_num);
+
+    auto data_ptr{result + 5 * sizeof(int)};
+    printMessages(data_ptr, old_messages_num, old_column_num, false, true);
+    printMessages(data_ptr, new_messages_num, new_column_num, true, true);
 }
 
 auto Application::privateChat_addMessage() -> void
