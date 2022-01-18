@@ -57,28 +57,6 @@ auto Utils::printTimeAndData(const tm& timeinfo) -> void
     std::cout << timeinfo.tm_year + 1900 << std::endl;
 }
 
-// auto Utils::getBoundedString(std::string& string, int size, bool hidden) -> void
-//{
-//    auto c{' '};
-//    auto i{0};
-//    string.erase();
-//    while ((c = _getch()) != '\r')
-//    {
-//        string.push_back(c);
-//        if (hidden)
-//            _putch('*');
-//        else
-//            _putch(c);
-//        if (++i == size)
-//        {
-//            while (_getch() != '\r')
-//            {
-//            }
-//            break;
-//        }
-//    }
-//}
-
 auto Utils::getString(std::string& string) -> void
 {
 #ifdef _WIN32
@@ -155,8 +133,8 @@ auto Utils::printOSVersion() -> void
 
 #elif defined(__linux__)
 
-    struct utsname utsname;  // объект для структуры типа utsname
-    uname(&utsname);         // передаем объект по ссылке
+    struct utsname utsname;  // РѕР±СЉРµРєС‚ РґР»СЏ СЃС‚СЂСѓРєС‚СѓСЂС‹ С‚РёРїР° utsname
+    uname(&utsname);         // РїРµСЂРµРґР°РµРј РѕР±СЉРµРєС‚ РїРѕ СЃСЃС‹Р»РєРµ
 
     std::cout << std::endl;
     std::cout << "OS name: " << utsname.sysname << std::endl;

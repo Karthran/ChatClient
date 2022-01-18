@@ -31,7 +31,7 @@ const char* DEFAULT_PORT = "27777";
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-const int DEFAULT_PORT = 27777;  // Á
+const int DEFAULT_PORT = 27777; 
 #endif  //  _WIN32
 
 #ifdef _WIN32
