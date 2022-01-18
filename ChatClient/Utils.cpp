@@ -94,17 +94,13 @@ auto Utils::getString(std::string& string) -> void
 #elif defined __linux__
     std::getline(std::cin, string);
 #endif  //
-
-    // std::cin >> string;
-    // std::cin.ignore(IGNORED_NUM, '\n');
-    // if (size && size < string.size()) string.resize(size);
 }
 
 auto Utils::getPassword(std::string& password, const std::string& text) -> void
 {
 #if defined(_WIN32)
 
-    std::cout << std::endl << text;
+    std::cout << text;
     std::cout << BOLDGREEN;
 
     auto c{' '};
