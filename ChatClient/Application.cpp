@@ -804,9 +804,7 @@ auto Application::talkToServer(const char* message, size_t msg_length) const -> 
     std::unique_lock<std::mutex> out_ready_lock(out_mutex);
     _out_ready_event_holder.wait_for(out_ready_lock, std::chrono::milliseconds(500), []() { return !_client->getOutMessageReady(); });
     if (_client->getOutMessageReady()) return nullptr;
-    //while (_client->getOutMessageReady())//////////////////////////////////////////////
-    //{
-    //}
+
     _client->setMessage(message, msg_length);
     _client->setOutMessageReady(true);
     _out_ready_event_holder.notify_one();
@@ -814,13 +812,7 @@ auto Application::talkToServer(const char* message, size_t msg_length) const -> 
     std::unique_lock<std::mutex> in_ready_lock(in_mutex);
     _in_ready_event_holder.wait_for(in_ready_lock, std::chrono::milliseconds(500), []() { return _client->getInMessageReady(); });
     if (!_client->getInMessageReady()) return nullptr;
-    //while (!_client->getInMessageReady())
-    //{
-    //    if (_client->getServerError())
-    //    {
-    //        break;
-    //    }
-    //}
+
     _client->setInMessageReady(false);
     return _client->getMessage();
 }

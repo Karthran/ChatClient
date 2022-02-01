@@ -121,10 +121,6 @@ auto Client::client_thread(std::condition_variable& in_holder, std::condition_va
         std::unique_lock<std::mutex> out_lock(out_mutex);
         out_holder.wait(out_lock, []() { return _out_message_ready; });
 
-        //while (!_out_message_ready)
-        //{
-        //}
-
         iResult = send(ConnectSocket, _exchange_buffer.get(), _message_length, 0);  
 
         if (iResult == SOCKET_ERROR)
@@ -210,10 +206,6 @@ auto Client::client_thread(std::condition_variable& in_holder, std::condition_va
 
         std::unique_lock<std::mutex> out_lock(out_mutex);
         out_holder.wait(out_lock, []() { return _out_message_ready; });
-
-        //while (!_out_message_ready)
-        //{
-        //}
 
         ssize_t bytes = write(socket_file_descriptor, _exchange_buffer.get(), _message_length);
 
