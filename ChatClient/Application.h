@@ -2,8 +2,10 @@
 #include <string>
 #include <memory>
 #include <vector>
-#include <map>
-#include <unordered_map>
+#include <condition_variable>
+#include <mutex>
+//#include <map>
+//#include <unordered_map>
 
 class Client;
 enum class OperationCode;
@@ -18,7 +20,6 @@ public:
     auto sendToServer(const char* message, size_t message_length, OperationCode operation_code) -> const char*;
 
 private:
-    std::shared_ptr<Client> _client{};
     std::shared_ptr <char[]> _msg_buffer{};
     size_t _msg_buffer_size{0};
     size_t _current_msg_length{0};
@@ -26,6 +27,8 @@ private:
     std::string _self_path{};
     std::string _user_id{"0"};
     std::string _private_chat_id{"0"};
+    mutable std::mutex in_mutex;
+    mutable std::mutex out_mutex;
 
     auto talkToServer(const char* message, size_t msg_length) const -> char*;
 

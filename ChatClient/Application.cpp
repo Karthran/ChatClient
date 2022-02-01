@@ -3,7 +3,7 @@
 #include <iomanip>
 #include <exception>
 #include <string.h>
-
+#include <chrono>
 #include "Application.h"
 #include "Client.h"
 #include "core.h"
@@ -15,6 +15,10 @@
 #include <windows.h>
 #pragma execution_character_set("utf-8")
 #endif
+
+std::shared_ptr<Client> _client{};
+std::condition_variable _in_ready_event_holder;
+std::condition_variable _out_ready_event_holder; 
 
 Application::Application()
 {
@@ -29,7 +33,7 @@ auto Application::run() -> void
     Utils::printOSVersion();
 
     _client = std::make_shared<Client>();
-    _client->run();
+    _client->run(_in_ready_event_holder, _out_ready_event_holder);
 
     std::cout << std::endl << BOLDYELLOW << UNDER_LINE << "Wellcome to Console Chat!" << RESET << std::endl;
 
@@ -772,12 +776,14 @@ auto Application::sendToServer(const char* message, size_t message_length, Opera
     addToBuffer(_msg_buffer.get(), _current_msg_length, static_cast<int>(OperationCode::CHECK_SIZE));
     addToBuffer(_msg_buffer.get(), _current_msg_length, message_length);
     auto receive_buf{talkToServer(_msg_buffer.get(), _current_msg_length)};
+    if (!receive_buf) return nullptr;
 
     _current_msg_length = 0;
     addToBuffer(_msg_buffer.get(), _current_msg_length, static_cast<int>(operation_code));
     addToBuffer(_msg_buffer.get(), _current_msg_length, static_cast<int>(OperationCode::CHECK_SIZE));
     addToBuffer(_msg_buffer.get(), _current_msg_length, message, message_length);
     receive_buf = talkToServer(_msg_buffer.get(), _current_msg_length);
+    if (!receive_buf) return nullptr;
 
     auto message_size{-1};
     getFromBuffer(receive_buf, sizeof(int), message_size);
@@ -786,6 +792,8 @@ auto Application::sendToServer(const char* message, size_t message_length, Opera
     addToBuffer(_msg_buffer.get(), _current_msg_length, static_cast<int>(operation_code));
     addToBuffer(_msg_buffer.get(), _current_msg_length, static_cast<int>(OperationCode::READY));
     receive_buf = talkToServer(_msg_buffer.get(), _current_msg_length);
+    if (!receive_buf) return nullptr;
+
     receive_buf[message_size] = '\0';
 
     return receive_buf;
@@ -793,18 +801,26 @@ auto Application::sendToServer(const char* message, size_t message_length, Opera
 
 auto Application::talkToServer(const char* message, size_t msg_length) const -> char*
 {
-    while (_client->getOutMessageReady())
-    {
-    }
+    std::unique_lock<std::mutex> out_ready_lock(out_mutex);
+    _out_ready_event_holder.wait_for(out_ready_lock, std::chrono::milliseconds(500), []() { return !_client->getOutMessageReady(); });
+    if (_client->getOutMessageReady()) return nullptr;
+    //while (_client->getOutMessageReady())//////////////////////////////////////////////
+    //{
+    //}
     _client->setMessage(message, msg_length);
     _client->setOutMessageReady(true);
-    while (!_client->getInMessageReady())
-    {
-        if (_client->getServerError())
-        {
-            break;
-        }
-    }
+    _out_ready_event_holder.notify_one();
+
+    std::unique_lock<std::mutex> in_ready_lock(in_mutex);
+    _in_ready_event_holder.wait_for(in_ready_lock, std::chrono::milliseconds(500), []() { return _client->getInMessageReady(); });
+    if (!_client->getInMessageReady()) return nullptr;
+    //while (!_client->getInMessageReady())
+    //{
+    //    if (_client->getServerError())
+    //    {
+    //        break;
+    //    }
+    //}
     _client->setInMessageReady(false);
     return _client->getMessage();
 }

@@ -30,3 +30,4 @@ enum class OperationCode
 };
 
 const int HEADER_SIZE = 256;
+

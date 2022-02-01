@@ -34,9 +34,11 @@ const char* DEFAULT_PORT = "27777";
 const int DEFAULT_PORT = 27777; 
 #endif  //  _WIN32
 
-#ifdef _WIN32
+volatile bool _out_message_ready{false};
+volatile bool _in_message_ready{false};
 
-auto Client::client_thread() -> int
+#ifdef _WIN32
+auto Client::client_thread(std::condition_variable& in_holder, std::condition_variable& out_holder) -> int
 {
     WSADATA wsaData;
     SOCKET ConnectSocket = INVALID_SOCKET;
@@ -116,9 +118,12 @@ auto Client::client_thread() -> int
             _need_exchange_buffer_resize = false;
         }
 
-        while (!_out_message_ready)
-        {
-        }
+        std::unique_lock<std::mutex> out_lock(out_mutex);
+        out_holder.wait(out_lock, []() { return _out_message_ready; });
+
+        //while (!_out_message_ready)
+        //{
+        //}
 
         iResult = send(ConnectSocket, _exchange_buffer.get(), _message_length, 0);  
 
@@ -131,6 +136,7 @@ auto Client::client_thread() -> int
             break;
         }
         _out_message_ready = false;
+        out_holder.notify_one();
 
         if (*(reinterpret_cast<int*>(_exchange_buffer.get())) == static_cast<int>(OperationCode::STOP))
         {
@@ -143,6 +149,7 @@ auto Client::client_thread() -> int
         if (iResult > 0)
         {
             _in_message_ready = true;
+            in_holder.notify_one();
         }
         else if (iResult == 0)
         {
@@ -162,7 +169,7 @@ auto Client::client_thread() -> int
 }
 
 #elif defined __linux__
-auto Client::client_thread() -> int
+auto Client::client_thread(std::condition_variable& in_holder, std::condition_variable& out_holder) -> int
 {
 
     int socket_file_descriptor, connection;
@@ -200,15 +207,21 @@ auto Client::client_thread() -> int
             }
             _need_exchange_buffer_resize = false;
         }
-        while (!_out_message_ready)
-        {
-        }
+
+        std::unique_lock<std::mutex> out_lock(out_mutex);
+        out_holder.wait(out_lock, []() { return _out_message_ready; });
+
+        //while (!_out_message_ready)
+        //{
+        //}
 
         ssize_t bytes = write(socket_file_descriptor, _exchange_buffer.get(), _message_length);
 
         if (bytes >= 0)
         {
             _out_message_ready = false;
+            out_holder.notify_one();
+
         }
         else
         {
@@ -226,6 +239,7 @@ auto Client::client_thread() -> int
         if (length > 0)
         {
             _in_message_ready = true;
+            in_holder.notify_one();
         }
     }
 
@@ -236,10 +250,10 @@ auto Client::client_thread() -> int
 
 #endif  // _WIN32
 
-auto Client::run() -> void
+auto Client::run(std::condition_variable& in_holder, std::condition_variable& out_holder) -> void
 {
     _exchange_buffer = std::shared_ptr<char[]>(new char[DEFAULT_BUFLEN]);
-    std::thread tr(&Client::client_thread, this);
+    std::thread tr(&Client::client_thread, this, std::ref(in_holder), std::ref(out_holder));
     tr.detach();
 }
 
