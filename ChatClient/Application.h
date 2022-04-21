@@ -12,7 +12,6 @@ class Application
 {
 public:
     Application();
-    ~Application();
 
     void run();
     auto sendToServer(const char* message, size_t message_length, OperationCode operation_code) -> const char*;

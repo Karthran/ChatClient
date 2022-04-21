@@ -26,8 +26,6 @@ Application::Application()
     Utils::getSelfPath(_self_path);
 }
 
-Application::~Application() {}
-
 auto Application::run() -> void
 {
     Utils::printOSVersion();
@@ -644,7 +642,7 @@ auto Application::privateChat_editMessage() -> void
     auto result{sendToServer(query_data.c_str(), query_data.size(), OperationCode::PRIVATE_CHAT_CHECK_MESSAGE)};
     auto messages_num{-1};
     auto column_num{-1};
-    getFromBuffer(result, sizeof(int), messages_num);  // first int OperationCode::COMMON_CHAT_CHECK_MESSAGE
+    getFromBuffer(result, sizeof(int), messages_num);  // first int OperationCode::PRIVATE_CHAT_CHECK_MESSAGE
     getFromBuffer(result, 2 * sizeof(int), column_num);
     auto data_ptr{result + 3 * sizeof(int)};
     if (!messages_num) return;
@@ -671,7 +669,7 @@ auto Application::privateChat_deleteMessage() -> void
     auto result{sendToServer(query_data.c_str(), query_data.size(), OperationCode::PRIVATE_CHAT_CHECK_MESSAGE)};
     auto messages_num{-1};
     auto column_num{-1};
-    getFromBuffer(result, sizeof(int), messages_num);  // first int OperationCode::COMMON_CHAT_CHECK_MESSAGE
+    getFromBuffer(result, sizeof(int), messages_num);  // first int OperationCode::PRIVATE_CHAT_CHECK_MESSAGE
     getFromBuffer(result, 2 * sizeof(int), column_num);
     auto data_ptr{result + 3 * sizeof(int)};
     if (!messages_num) return;
@@ -771,7 +769,7 @@ auto Application::sendToServer(const char* message, size_t message_length, Opera
         _msg_buffer = std::shared_ptr<char[]>(new char[_msg_buffer_size]);
     }
 
-    _client->setBufferSize(message_length + HEADER_SIZE);
+    //_client->setBufferSize(message_length + HEADER_SIZE);
     _current_msg_length = 0;
     addToBuffer(_msg_buffer.get(), _current_msg_length, static_cast<int>(OperationCode::CHECK_SIZE));
     addToBuffer(_msg_buffer.get(), _current_msg_length, message_length);
@@ -818,10 +816,10 @@ auto Application::talkToServer(const char* message, size_t msg_length) const -> 
 }
 auto Application::addToBuffer(char* buffer, size_t& cur_msg_len, int value) const -> void
 {
-    auto length{sizeof(value)};
+    size_t length = sizeof(value);
     auto char_ptr{reinterpret_cast<char*>(&value)};
 
-    for (auto i{0}; i < length; ++i)
+    for (size_t i = 0; i < length; ++i)
     {
         buffer[i + cur_msg_len] = char_ptr[i];
     }
@@ -830,7 +828,7 @@ auto Application::addToBuffer(char* buffer, size_t& cur_msg_len, int value) cons
 
 auto Application::addToBuffer(char* buffer, size_t& cur_msg_len, const char* string, size_t str_len) const -> void
 {
-    for (auto i{0}; i < str_len; ++i)
+    for (size_t i = 0; i < str_len; ++i)
     {
         buffer[i + cur_msg_len] = string[i];
     }
@@ -840,9 +838,9 @@ auto Application::addToBuffer(char* buffer, size_t& cur_msg_len, const char* str
 auto Application::getFromBuffer(const char* buffer, size_t shift, int& value) const -> void
 {
     char val_buff[sizeof(value)];
-    auto length{sizeof(value)};
+    size_t length = sizeof(value);
 
-    for (auto i{0}; i < length; ++i)
+    for (size_t i = 0; i < length; ++i)
     {
         val_buff[i] = buffer[shift + i];
     }
@@ -851,7 +849,7 @@ auto Application::getFromBuffer(const char* buffer, size_t shift, int& value) co
 
 auto Application::getFromBuffer(const char* buffer, size_t shift, char* string, size_t str_len) const -> void
 {
-    for (auto i{0}; i < str_len; ++i)
+    for (size_t i =0; i < str_len; ++i)
     {
         string[i] = buffer[shift + i];
     }
